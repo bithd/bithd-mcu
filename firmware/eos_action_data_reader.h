@@ -25,6 +25,8 @@ int reader_get_undelegate(EosReaderCTX *, EosioUndelegate *);
 
 int reader_get_vote_producer(EosReaderCTX *, EosioVoteProducer *);
 
+int reader_get_refund(EosReaderCTX *, EosioRefund *);
+
 // eosio.token
 
 int reader_get_transfer(EosReaderCTX *, EosioTokenTransfer *);

@@ -688,6 +688,27 @@ bool confirm_eosio_vote_producer(EosReaderCTX *ctx)
 	return protectButton(ButtonRequestType_ButtonRequest_SignTx, false);
 }
 
+bool confirm_eosio_refund(EosReaderCTX *ctx)
+{
+	EosioRefund refund;
+	if (!reader_get_refund(ctx, &refund)) {
+		return false;
+	}
+	char _refund_desc[] = "Confirm refund tokens for";
+	char _owner_desc[] = "owner:";
+	char _owner[21]; 
+	memset(_owner, 0, 21);
+	name_to_str(refund.owner, _owner);
+	
+	layoutDialogSwipe(
+		&bmp_icon_question,
+		_cancel, _confirm, NULL,
+		_refund_desc, _owner_desc, _owner, NULL, NULL, NULL
+	);
+
+	return protectButton(ButtonRequestType_ButtonRequest_SignTx, false);
+}
+
 bool confirm_token_transfer(EosReaderCTX *ctx, uint64_t account) 
 {
 	EosioTokenTransfer transfer;
@@ -998,6 +1019,8 @@ bool confirm_action(EosReaderCTX *ctx)
 			 	return confirm_eosio_undelegate(ctx);
 			case ACTION_VOTE_PRODUCER:
 				return confirm_eosio_vote_producer(ctx); 
+			case ACTION_REFUND:
+				return confirm_eosio_refund(ctx);
 			default:
 				break;
 		}

@@ -238,6 +238,14 @@ int reader_get_newaccount(EosReaderCTX *_ctx, EosioNewAccount *newaccount)
     return SUCCESS;
 }
 
+int reader_get_refund(EosReaderCTX *_ctx, EosioRefund *refund)
+{
+    if (!reader_get_long(_ctx, &refund->owner)) {
+        return FAILED;
+    }
+    return SUCCESS;
+}
+
 int reader_get_authority(EosReaderCTX *_ctx, EosAuthority *authority) 
 {
     if (!reader_get_int(_ctx, &authority->threshold)) {
