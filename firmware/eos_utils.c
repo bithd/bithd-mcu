@@ -70,7 +70,13 @@ uint8_t format_asset(EosTypeAsset *asset, char *out)
         value /= 10;
     char sym[8];
     symbol_to_str(asset->symbol, sym);
-    return sprintf(out, "%.4f %s", value, sym);    
+	char value_str[20];
+    uint8_t len = sprintf(value_str, "%.4f", value);
+	while((value_str[len-1]=='0') || (value_str[len-1]=='.')) {
+		value_str[len-1] = 0;
+		len--;
+	}
+	return sprintf(out, "%s %s", value_str, sym);
 }
 
 uint8_t format_producer(uint64_t name, int no, char *out)
