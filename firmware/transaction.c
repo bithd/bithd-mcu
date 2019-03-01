@@ -32,8 +32,13 @@
 #include "messages.pb.h"
 #include "types.pb.h"
 #include "segwit_addr.h"
+#include "cash_addr.h"
 
 #define SEGWIT_VERSION_0 0
+
+#define CASHADDR_P2KH (0)
+#define CASHADDR_P2SH (8)
+#define CASHADDR_160  (0)
 
 /* transaction input size (without script): 32 prevhash, 4 idx, 4 sequence */
 #define TXSIZE_INPUT 40
@@ -53,11 +58,23 @@
 #define TXSIZE_P2PKHASH 25
 /* size of a p2sh script (hash, push, 20 scripthash, equal) */
 #define TXSIZE_P2SCRIPT 23
+/* size of a Decred witness (without script): 8 amount, 4 block height, 4 block index */
+#define TXSIZE_DECRED_WITNESS 16
 
 static const uint8_t segwit_header[2] = {0,1};
 
-#define op_push_size(len) ((len) < 0x4c ? 1 : (len) < 0x100 ? 2 : \
-						   (len) < 0x10000 ? 3 : 5)
+static inline uint32_t op_push_size(uint32_t i) {
+	if (i < 0x4C) {
+		return 1;
+	}
+	if (i < 0x100) {
+		return 2;
+	}
+	if (i < 0x10000) {
+		return 3;
+	}
+	return 5;
+}
 
 uint32_t op_push(uint32_t i, uint8_t *out) {
 	if (i < 0x4C) {
@@ -94,10 +111,10 @@ bool compute_address(const CoinInfo *coin,
 	size_t prelen;
 
 	if (has_multisig) {
-		if (cryptoMultisigPubkeyIndex(multisig, node->public_key) < 0) {
+		if (cryptoMultisigPubkeyIndex(coin, multisig, node->public_key) < 0) {
 			return 0;
 		}
-		if (compile_script_multisig_hash(multisig, digest) == 0) {
+		if (compile_script_multisig_hash(coin, multisig, digest) == 0) {
 			return 0;
 		}
 		if (script_type == InputScriptType_SPENDWITNESS) {
@@ -123,7 +140,13 @@ bool compute_address(const CoinInfo *coin,
 			prelen = address_prefix_bytes_len(coin->address_type_p2sh);
 			address_write_prefix_bytes(coin->address_type_p2sh, raw);
 			ripemd160(digest, 32, raw + prelen);
-			if (!base58_encode_check(raw, prelen + 20, address, MAX_ADDR_SIZE)) {
+			if (!base58_encode_check(raw, coin->curve->hasher_base58, prelen + 20, address, MAX_ADDR_SIZE)) {
+				return 0;
+			}
+		} else if (coin->cashaddr_prefix) {
+			raw[0] = CASHADDR_P2SH | CASHADDR_160;
+			ripemd160(digest, 32, raw + 1);
+			if (!cash_addr_encode(address, coin->cashaddr_prefix, raw, 21)) {
 				return 0;
 			}
 		} else {
@@ -131,7 +154,7 @@ bool compute_address(const CoinInfo *coin,
 			prelen = address_prefix_bytes_len(coin->address_type_p2sh);
 			address_write_prefix_bytes(coin->address_type_p2sh, raw);
 			ripemd160(digest, 32, raw + prelen);
-			if (!base58_encode_check(raw, prelen + 20, address, MAX_ADDR_SIZE)) {
+			if (!base58_encode_check(raw, coin->curve->hasher_base58, prelen + 20, address, MAX_ADDR_SIZE)) {
 				return 0;
 			}
 		}
@@ -140,7 +163,7 @@ bool compute_address(const CoinInfo *coin,
 		if (!coin->has_segwit || !coin->bech32_prefix) {
 			return 0;
 		}
-		ecdsa_get_pubkeyhash(node->public_key, digest);
+		ecdsa_get_pubkeyhash(node->public_key, coin->curve->hasher_pubkey, digest);
 		if (!segwit_addr_encode(address, coin->bech32_prefix, SEGWIT_VERSION_0, digest, 20)) {
 			return 0;
 		}
@@ -152,9 +175,15 @@ bool compute_address(const CoinInfo *coin,
 		if (!coin->has_address_type_p2sh) {
 			return 0;
 		}
-		ecdsa_get_address_segwit_p2sh(node->public_key, coin->address_type_p2sh, address, MAX_ADDR_SIZE);
+		ecdsa_get_address_segwit_p2sh(node->public_key, coin->address_type_p2sh, coin->curve->hasher_pubkey, coin->curve->hasher_base58, address, MAX_ADDR_SIZE);
+	}  else if (coin->cashaddr_prefix) {
+		// ecdsa_get_address_raw(node->public_key, CASHADDR_P2KH | CASHADDR_160, coin->curve->hasher_pubkey, raw);
+		// if (!cash_addr_encode(address, coin->cashaddr_prefix, raw, 21)) {
+		// 	return 0;
+		// }
+		return 0;
 	} else {
-		ecdsa_get_address(node->public_key, coin->address_type, address, MAX_ADDR_SIZE);
+		ecdsa_get_address(node->public_key, coin->address_type, coin->curve->hasher_pubkey, coin->curve->hasher_base58, address, MAX_ADDR_SIZE);
 	}
 	return 1;
 }
@@ -172,7 +201,11 @@ int compile_output(const CoinInfo *coin, const HDNode *root, TxOutputType *in, T
 			return 0; // failed to compile output
 		}
 		if (needs_confirm) {
-			layoutConfirmOpReturn(in->op_return_data.bytes, in->op_return_data.size);
+			if (in->op_return_data.size >= 8 && memcmp(in->op_return_data.bytes, "omni", 4) == 0) {  // OMNI transaction
+				layoutConfirmOmni(in->op_return_data.bytes, in->op_return_data.size);
+			} else {
+				layoutConfirmOpReturn(in->op_return_data.bytes, in->op_return_data.size);
+			}
 			if (!protectButton(ButtonRequestType_ButtonRequest_ConfirmOutput, false)) {
 				return -1; // user aborted
 			}
@@ -219,11 +252,12 @@ int compile_output(const CoinInfo *coin, const HDNode *root, TxOutputType *in, T
 		return 0; // failed to compile output
 	}
 
-	addr_raw_len = base58_decode_check(in->address, addr_raw, MAX_ADDR_RAW_SIZE);
+	addr_raw_len = base58_decode_check(in->address, coin->curve->hasher_base58, addr_raw, MAX_ADDR_RAW_SIZE);
 	size_t prefix_len;
 	if (coin->has_address_type                                  // p2pkh
 		&& address_check_prefix(addr_raw, coin->address_type)
-		&& addr_raw_len == 20 + (prefix_len = address_prefix_bytes_len(coin->address_type))) {
+		&& addr_raw_len == 20 + (prefix_len = address_prefix_bytes_len(coin->address_type))
+		&& address_check_prefix(addr_raw, coin->address_type)) {
 		out->script_pubkey.bytes[0] = 0x76; // OP_DUP
 		out->script_pubkey.bytes[1] = 0xA9; // OP_HASH_160
 		out->script_pubkey.bytes[2] = 0x14; // pushing 20 bytes
@@ -239,6 +273,28 @@ int compile_output(const CoinInfo *coin, const HDNode *root, TxOutputType *in, T
 		memcpy(out->script_pubkey.bytes + 2, addr_raw + prefix_len, 20);
 		out->script_pubkey.bytes[22] = 0x87; // OP_EQUAL
 		out->script_pubkey.size = 23;
+	}  else if (coin->cashaddr_prefix
+			   && cash_addr_decode(addr_raw, &addr_raw_len, coin->cashaddr_prefix, in->address)) {
+		if (addr_raw_len == 21
+			&& addr_raw[0] == (CASHADDR_P2KH | CASHADDR_160)) {
+			out->script_pubkey.bytes[0] = 0x76; // OP_DUP
+			out->script_pubkey.bytes[1] = 0xA9; // OP_HASH_160
+			out->script_pubkey.bytes[2] = 0x14; // pushing 20 bytes
+			memcpy(out->script_pubkey.bytes + 3, addr_raw + 1, 20);
+			out->script_pubkey.bytes[23] = 0x88; // OP_EQUALVERIFY
+			out->script_pubkey.bytes[24] = 0xAC; // OP_CHECKSIG
+			out->script_pubkey.size = 25;
+
+		} else if (addr_raw_len == 21
+				   && addr_raw[0] == (CASHADDR_P2SH | CASHADDR_160)) {
+			out->script_pubkey.bytes[0] = 0xA9; // OP_HASH_160
+			out->script_pubkey.bytes[1] = 0x14; // pushing 20 bytes
+			memcpy(out->script_pubkey.bytes + 2, addr_raw + 1, 20);
+			out->script_pubkey.bytes[22] = 0x87; // OP_EQUAL
+			out->script_pubkey.size = 23;
+		} else {
+			return 0;
+		}
 	} else if (coin->bech32_prefix) {
 		int witver;
 		if (!segwit_addr_decode(&witver, addr_raw, &addr_raw_len, coin->bech32_prefix, in->address)) {
@@ -281,7 +337,7 @@ uint32_t compile_script_sig(uint32_t address_type, const uint8_t *pubkeyhash, ui
 }
 
 // if out == NULL just compute the length
-uint32_t compile_script_multisig(const MultisigRedeemScriptType *multisig, uint8_t *out)
+uint32_t compile_script_multisig(const CoinInfo *coin, const MultisigRedeemScriptType *multisig, uint8_t *out)
 {
 	if (!multisig->has_m) return 0;
 	const uint32_t m = multisig->m;
@@ -293,7 +349,7 @@ uint32_t compile_script_multisig(const MultisigRedeemScriptType *multisig, uint8
 		out[r] = 0x50 + m; r++;
 		for (uint32_t i = 0; i < n; i++) {
 			out[r] = 33; r++; // OP_PUSH 33
-			const uint8_t *pubkey = cryptoHDNodePathToPubkey(&(multisig->pubkeys[i]));
+			const uint8_t *pubkey = cryptoHDNodePathToPubkey(coin, &(multisig->pubkeys[i]));
 			if (!pubkey) return 0;
 			memcpy(out + r, pubkey, 33); r += 33;
 		}
@@ -305,7 +361,7 @@ uint32_t compile_script_multisig(const MultisigRedeemScriptType *multisig, uint8
 	return r;
 }
 
-uint32_t compile_script_multisig_hash(const MultisigRedeemScriptType *multisig, uint8_t *hash)
+uint32_t compile_script_multisig_hash(const CoinInfo *coin, const MultisigRedeemScriptType *multisig, uint8_t *hash)
 {
 	if (!multisig->has_m) return 0;
 	const uint32_t m = multisig->m;
@@ -313,22 +369,22 @@ uint32_t compile_script_multisig_hash(const MultisigRedeemScriptType *multisig, 
 	if (m < 1 || m > 15) return 0;
 	if (n < 1 || n > 15) return 0;
 
-	SHA256_CTX ctx;
-	sha256_Init(&ctx);
+	Hasher hasher;
+	hasher_Init(&hasher, coin->curve->hasher_script);
 
 	uint8_t d[2];
-	d[0] = 0x50 + m; sha256_Update(&ctx, d, 1);
+	d[0] = 0x50 + m; hasher_Update(&hasher, d, 1);
 	for (uint32_t i = 0; i < n; i++) {
-		d[0] = 33; sha256_Update(&ctx, d, 1); // OP_PUSH 33
-		const uint8_t *pubkey = cryptoHDNodePathToPubkey(&(multisig->pubkeys[i]));
+		d[0] = 33; hasher_Update(&hasher, d, 1); // OP_PUSH 33
+		const uint8_t *pubkey = cryptoHDNodePathToPubkey(coin, &(multisig->pubkeys[i]));
 		if (!pubkey) return 0;
-		sha256_Update(&ctx, pubkey, 33);
+		hasher_Update(&hasher, pubkey, 33);
 	}
 	d[0] = 0x50 + n;
 	d[1] = 0xAE;
-	sha256_Update(&ctx, d, 2);
+	hasher_Update(&hasher, d, 2);
 
-	sha256_Final(&ctx, hash);
+	hasher_Final(&hasher, hash);
 
 	return 1;
 }
@@ -344,10 +400,13 @@ uint32_t serialize_script_sig(const uint8_t *signature, uint32_t signature_len, 
 	return r;
 }
 
-uint32_t serialize_script_multisig(const MultisigRedeemScriptType *multisig, uint8_t sighash, uint8_t *out)
+uint32_t serialize_script_multisig(const CoinInfo *coin, const MultisigRedeemScriptType *multisig, uint8_t sighash, uint8_t *out)
 {
 	uint32_t r = 0;
-	out[r] = 0x00; r++;
+	if (!coin->decred) {
+		// Decred fixed the off-by-one bug
+		out[r] = 0x00; r++;
+	}
 	for (uint32_t i = 0; i < multisig->signatures_count; i++) {
 		if (multisig->signatures[i].size == 0) {
 			continue;
@@ -356,44 +415,48 @@ uint32_t serialize_script_multisig(const MultisigRedeemScriptType *multisig, uin
 		memcpy(out + r, multisig->signatures[i].bytes, multisig->signatures[i].size); r += multisig->signatures[i].size;
 		out[r] = sighash; r++;
 	}
-	uint32_t script_len = compile_script_multisig(multisig, 0);
+	uint32_t script_len = compile_script_multisig(coin, multisig, 0);
 	if (script_len == 0) {
 		return 0;
 	}
 	r += op_push(script_len, out + r);
-	r += compile_script_multisig(multisig, out + r);
+	r += compile_script_multisig(coin, multisig, out + r);
 	return r;
 }
 
 // tx methods
 
-uint32_t tx_prevout_hash(SHA256_CTX *ctx, const TxInputType *input)
+uint32_t tx_prevout_hash(Hasher *hasher, const TxInputType *input)
 {
 	for (int i = 0; i < 32; i++) {
-		sha256_Update(ctx, &(input->prev_hash.bytes[31 - i]), 1);
+		hasher_Update(hasher, &(input->prev_hash.bytes[31 - i]), 1);
 	}
-	sha256_Update(ctx, (const uint8_t *)&input->prev_index, 4);
+	hasher_Update(hasher, (const uint8_t *)&input->prev_index, 4);
 	return 36;
 }
 
-uint32_t tx_script_hash(SHA256_CTX *ctx, uint32_t size, const uint8_t *data)
+uint32_t tx_script_hash(Hasher *hasher, uint32_t size, const uint8_t *data)
 {
-	int r = ser_length_hash(ctx, size);
-	sha256_Update(ctx, data, size);
+	int r = ser_length_hash(hasher, size);
+	hasher_Update(hasher, data, size);
 	return r + size;
 }
 
-uint32_t tx_sequence_hash(SHA256_CTX *ctx, const TxInputType *input)
+uint32_t tx_sequence_hash(Hasher *hasher, const TxInputType *input)
 {
-	sha256_Update(ctx, (const uint8_t *)&input->sequence, 4);
+	hasher_Update(hasher, (const uint8_t *)&input->sequence, 4);
 	return 4;
 }
 
-uint32_t tx_output_hash(SHA256_CTX *ctx, const TxOutputBinType *output)
+uint32_t tx_output_hash(Hasher *hasher, const TxOutputBinType *output, bool decred)
 {
 	uint32_t r = 0;
-	sha256_Update(ctx, (const uint8_t *)&output->amount, 8); r += 8;
-	r += tx_script_hash(ctx, output->script_pubkey.size, output->script_pubkey.bytes);
+	hasher_Update(hasher, (const uint8_t *)&output->amount, 8); r += 8;
+	if (decred) {
+		uint16_t script_version = output->decred_script_version & 0xFFFF;
+		hasher_Update(hasher, (const uint8_t *)&script_version, 2); r += 2;
+	}
+	r += tx_script_hash(hasher, output->script_pubkey.size, output->script_pubkey.bytes);
 	return r;
 }
 
@@ -407,10 +470,17 @@ uint32_t tx_serialize_script(uint32_t size, const uint8_t *data, uint8_t *out)
 uint32_t tx_serialize_header(TxStruct *tx, uint8_t *out)
 {
 	int r = 4;
-	memcpy(out, &(tx->version), 4);
-	if (tx->is_segwit) {
-		memcpy(out + r, segwit_header, 2);
-		r += 2;
+	if (tx->overwintered) {
+		uint32_t ver = tx->version | TX_OVERWINTERED;
+		memcpy(out, &ver, 4);
+		memcpy(out + 4, &(tx->version_group_id), 4);
+		r += 4;
+	} else {
+		memcpy(out, &(tx->version), 4);
+		if (tx->is_segwit) {
+			memcpy(out + r, segwit_header, 2);
+			r += 2;
+		}
 	}
 	return r + ser_length(tx->inputs_len, out + r);
 }
@@ -418,12 +488,19 @@ uint32_t tx_serialize_header(TxStruct *tx, uint8_t *out)
 uint32_t tx_serialize_header_hash(TxStruct *tx)
 {
 	int r = 4;
-	sha256_Update(&(tx->ctx), (const uint8_t *)&(tx->version), 4);
-	if (tx->is_segwit) {
-		sha256_Update(&(tx->ctx), segwit_header, 2);
-		r += 2;
+	if (tx->overwintered) {
+		uint32_t ver = tx->version | TX_OVERWINTERED;
+		hasher_Update(&(tx->hasher), (const uint8_t *)&ver, 4);
+		hasher_Update(&(tx->hasher), (const uint8_t *)&(tx->version_group_id), 4);
+		r += 4;
+	} else {
+		hasher_Update(&(tx->hasher), (const uint8_t *)&(tx->version), 4);
+		if (tx->is_segwit) {
+			hasher_Update(&(tx->hasher), segwit_header, 2);
+			r += 2;
+		}
 	}
-	return r + ser_length_hash(&(tx->ctx), tx->inputs_len);
+	return r + ser_length_hash(&(tx->hasher), tx->inputs_len);
 }
 
 uint32_t tx_serialize_input(TxStruct *tx, const TxInputType *input, uint8_t *out)
@@ -441,7 +518,12 @@ uint32_t tx_serialize_input(TxStruct *tx, const TxInputType *input, uint8_t *out
 	}
 	r += 32;
 	memcpy(out + r, &input->prev_index, 4); r += 4;
-	r += tx_serialize_script(input->script_sig.size, input->script_sig.bytes, out + r);
+	if (tx->is_decred) {
+		uint8_t tree = input->decred_tree & 0xFF;
+		out[r++] = tree;
+	} else {
+		r += tx_serialize_script(input->script_sig.size, input->script_sig.bytes, out + r);
+	}
 	memcpy(out + r, &input->sequence, 4); r += 4;
 
 	tx->have_inputs++;
@@ -460,9 +542,61 @@ uint32_t tx_serialize_input_hash(TxStruct *tx, const TxInputType *input)
 	if (tx->have_inputs == 0) {
 		r += tx_serialize_header_hash(tx);
 	}
-	r += tx_prevout_hash(&(tx->ctx), input);
-	r += tx_script_hash(&(tx->ctx), input->script_sig.size, input->script_sig.bytes);
-	r += tx_sequence_hash(&(tx->ctx), input);
+	r += tx_prevout_hash(&(tx->hasher), input);
+	if (tx->is_decred) {
+		uint8_t tree = input->decred_tree & 0xFF;
+		hasher_Update(&(tx->hasher), (const uint8_t *)&(tree), 1); r++;
+	} else {
+		r += tx_script_hash(&(tx->hasher), input->script_sig.size, input->script_sig.bytes);
+	}
+	r += tx_sequence_hash(&(tx->hasher), input);
+
+	tx->have_inputs++;
+	tx->size += r;
+
+	return r;
+}
+
+uint32_t tx_serialize_decred_witness(TxStruct *tx, const TxInputType *input, uint8_t *out)
+{
+	static const uint64_t amount = 0;
+	static const uint32_t block_height = 0x00000000;
+	static const uint32_t block_index = 0xFFFFFFFF;
+
+	if (tx->have_inputs >= tx->inputs_len) {
+		// already got all inputs
+		return 0;
+	}
+	uint32_t r = 0;
+	if (tx->have_inputs == 0) {
+		r += ser_length(tx->inputs_len, out + r);
+	}
+	memcpy(out + r, &amount, 8); r += 8;
+	memcpy(out + r, &block_height, 4); r += 4;
+	memcpy(out + r, &block_index, 4); r += 4;
+	r += tx_serialize_script(input->script_sig.size, input->script_sig.bytes, out + r);
+
+	tx->have_inputs++;
+	tx->size += r;
+
+	return r;
+}
+
+uint32_t tx_serialize_decred_witness_hash(TxStruct *tx, const TxInputType *input)
+{
+	if (tx->have_inputs >= tx->inputs_len) {
+		// already got all inputs
+		return 0;
+	}
+	uint32_t r = 0;
+	if (tx->have_inputs == 0) {
+		r += tx_serialize_header_hash(tx);
+	}
+	if (input == NULL) {
+		r += ser_length_hash(&(tx->hasher), 0);
+	} else {
+		r += tx_script_hash(&(tx->hasher), input->script_sig.size, input->script_sig.bytes);
+	}
 
 	tx->have_inputs++;
 	tx->size += r;
@@ -477,18 +611,46 @@ uint32_t tx_serialize_middle(TxStruct *tx, uint8_t *out)
 
 uint32_t tx_serialize_middle_hash(TxStruct *tx)
 {
-	return ser_length_hash(&(tx->ctx), tx->outputs_len);
+	return ser_length_hash(&(tx->hasher), tx->outputs_len);
 }
 
 uint32_t tx_serialize_footer(TxStruct *tx, uint8_t *out)
 {
 	memcpy(out, &(tx->lock_time), 4);
+	if (tx->overwintered) {
+		if (tx->version == 3) {
+			memcpy(out + 4, &(tx->expiry), 4);
+			out[8] = 0x00; // nJoinSplit
+			return 9;
+		} else
+		if (tx->version == 4) {
+			memcpy(out + 4, &(tx->expiry), 4);
+			memset(out + 8, 0, 8); // valueBalance
+			out[16] = 0x00; // nShieldedSpend
+			out[17] = 0x00; // nShieldedOutput
+			out[18] = 0x00; // nJoinSplit
+			return 19;
+		}
+	}
+	if (tx->is_decred) {
+		memcpy(out + 4, &(tx->expiry), 4);
+		return 8;
+	}
 	return 4;
 }
 
 uint32_t tx_serialize_footer_hash(TxStruct *tx)
 {
-	sha256_Update(&(tx->ctx), (const uint8_t *)&(tx->lock_time), 4);
+	hasher_Update(&(tx->hasher), (const uint8_t *)&(tx->lock_time), 4);
+	if (tx->overwintered) {
+		hasher_Update(&(tx->hasher), (const uint8_t *)&(tx->expiry), 4);
+		hasher_Update(&(tx->hasher), (const uint8_t *)"\x00", 1); // nJoinSplit
+		return 9;
+	}
+	if (tx->is_decred) {
+		hasher_Update(&(tx->hasher), (const uint8_t *)&(tx->expiry), 4);
+		return 8;
+	}
 	return 4;
 }
 
@@ -507,6 +669,10 @@ uint32_t tx_serialize_output(TxStruct *tx, const TxOutputBinType *output, uint8_
 		r += tx_serialize_middle(tx, out + r);
 	}
 	memcpy(out + r, &output->amount, 8); r += 8;
+	if (tx->is_decred) {
+		uint16_t script_version = output->decred_script_version & 0xFFFF;
+		memcpy(out + r, &script_version, 2); r += 2;
+	}
 	r += tx_serialize_script(output->script_pubkey.size, output->script_pubkey.bytes, out + r);
 	tx->have_outputs++;
 	if (tx->have_outputs == tx->outputs_len
@@ -531,7 +697,7 @@ uint32_t tx_serialize_output_hash(TxStruct *tx, const TxOutputBinType *output)
 	if (tx->have_outputs == 0) {
 		r += tx_serialize_middle_hash(tx);
 	}
-	r += tx_output_hash(&(tx->ctx), output);
+	r += tx_output_hash(&(tx->hasher), output, tx->is_decred);
 	tx->have_outputs++;
 	if (tx->have_outputs == tx->outputs_len
 		&& !tx->is_segwit) {
@@ -555,31 +721,34 @@ uint32_t tx_serialize_extra_data_hash(TxStruct *tx, const uint8_t *data, uint32_
 		// we are receiving too much data
 		return 0;
 	}
-	sha256_Update(&(tx->ctx), data, datalen);
+	hasher_Update(&(tx->hasher), data, datalen);
 	tx->extra_data_received += datalen;
 	tx->size += datalen;
 	return datalen;
 }
 
-void tx_init(TxStruct *tx, uint32_t inputs_len, uint32_t outputs_len, uint32_t version, uint32_t lock_time, uint32_t extra_data_len)
+void tx_init(TxStruct *tx, uint32_t inputs_len, uint32_t outputs_len, uint32_t version, uint32_t lock_time, uint32_t expiry, uint32_t extra_data_len, HasherType hasher_sign, bool overwintered, uint32_t version_group_id)
 {
 	tx->inputs_len = inputs_len;
 	tx->outputs_len = outputs_len;
 	tx->version = version;
 	tx->lock_time = lock_time;
+	tx->expiry = expiry;
 	tx->have_inputs = 0;
 	tx->have_outputs = 0;
 	tx->extra_data_len = extra_data_len;
 	tx->extra_data_received = 0;
 	tx->size = 0;
 	tx->is_segwit = false;
-	sha256_Init(&(tx->ctx));
+	tx->is_decred = false;
+	tx->overwintered = overwintered;
+	tx->version_group_id = version_group_id;
+	hasher_Init(&(tx->hasher), hasher_sign);
 }
 
 void tx_hash_final(TxStruct *t, uint8_t *hash, bool reverse)
 {
-	sha256_Final(&(t->ctx), hash);
-	sha256_Raw(hash, 32, hash);
+	hasher_Final(&(t->hasher), hash);
 	if (!reverse) return;
 	for (uint8_t i = 0; i < 16; i++) {
 		uint8_t k = hash[31 - i];
@@ -588,7 +757,7 @@ void tx_hash_final(TxStruct *t, uint8_t *hash, bool reverse)
 	}
 }
 
-uint32_t tx_input_weight(const TxInputType *txinput) {
+static uint32_t tx_input_script_size(const TxInputType *txinput) {
 	uint32_t input_script_size;
 	if (txinput->has_multisig) {
 		uint32_t multisig_script_size = TXSIZE_MULTISIGSCRIPT
@@ -599,6 +768,16 @@ uint32_t tx_input_weight(const TxInputType *txinput) {
 	} else {
 		input_script_size = (1 + TXSIZE_SIGNATURE + 1 + TXSIZE_PUBKEY);
 	}
+
+	return input_script_size;
+}
+
+uint32_t tx_input_weight(const CoinInfo *coin, const TxInputType *txinput) {
+	if (coin->decred) {
+		return 4 * (TXSIZE_INPUT + 1); // Decred tree
+	}
+
+	uint32_t input_script_size = tx_input_script_size(txinput);
 	uint32_t weight = 4 * TXSIZE_INPUT;
 	if (txinput->script_type == InputScriptType_SPENDADDRESS
 		|| txinput->script_type == InputScriptType_SPENDMULTISIG) {
@@ -636,11 +815,20 @@ uint32_t tx_output_weight(const CoinInfo *coin, const TxOutputType *txoutput) {
 		uint8_t addr_raw[MAX_ADDR_RAW_SIZE];
 		int witver;
 		size_t addr_raw_len;
-		if (coin->bech32_prefix
+		if (coin->cashaddr_prefix
+			&& cash_addr_decode(addr_raw, &addr_raw_len, coin->cashaddr_prefix, txoutput->address)) {
+			if (addr_raw_len == 21
+				&& addr_raw[0] == (CASHADDR_P2KH | CASHADDR_160)) {
+				output_script_size = TXSIZE_P2PKHASH;
+			} else if (addr_raw_len == 21
+					   && addr_raw[0] == (CASHADDR_P2SH | CASHADDR_160)) {
+				output_script_size = TXSIZE_P2SCRIPT;
+			}
+		} else if (coin->bech32_prefix
 			&& segwit_addr_decode(&witver, addr_raw, &addr_raw_len, coin->bech32_prefix, txoutput->address)) {
 			output_script_size = 2 + addr_raw_len;
 		} else {
-			addr_raw_len = base58_decode_check(txoutput->address, addr_raw, MAX_ADDR_RAW_SIZE);
+			addr_raw_len = base58_decode_check(txoutput->address, coin->curve->hasher_base58, addr_raw, MAX_ADDR_RAW_SIZE);
 			if (coin->has_address_type
 				&& address_check_prefix(addr_raw, coin->address_type)) {
 				output_script_size = TXSIZE_P2PKHASH;
@@ -651,5 +839,18 @@ uint32_t tx_output_weight(const CoinInfo *coin, const TxOutputType *txoutput) {
 		} 
 	}
 	output_script_size += ser_length_size(output_script_size);
-	return 4 * (TXSIZE_OUTPUT + output_script_size);
+
+	uint32_t size = TXSIZE_OUTPUT;
+	if (coin->decred) {
+		size += 2; // Decred script version
+	}
+
+	return 4 * (size + output_script_size);
+}
+
+uint32_t tx_decred_witness_weight(const TxInputType *txinput) {
+	uint32_t input_script_size = tx_input_script_size(txinput);
+	uint32_t size = TXSIZE_DECRED_WITNESS + ser_length_size(input_script_size) + input_script_size;
+
+	return 4 * size;
 }

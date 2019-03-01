@@ -32,7 +32,6 @@
 #include "rng.h"
 #include "hmac.h"
 #include "util.h"
-#include "macros.h"
 #include "gettext.h"
 
 #include "u2f/u2f.h"
@@ -41,11 +40,11 @@
 #include "u2f_knownapps.h"
 #include "u2f.h"
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
 // About 1/2 Second according to values used in protect.c
 #define U2F_TIMEOUT (800000/2)
-#define U2F_OUT_PKT_BUFFER_LEN 128
+#define U2F_OUT_PKT_BUFFER_LEN 130
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 // Initialise without a cid
 static uint32_t cid = 0;
@@ -60,7 +59,7 @@ static uint8_t u2f_out_packets[U2F_OUT_PKT_BUFFER_LEN][HID_RPT_SIZE];
 #define KEY_HANDLE_LEN (KEY_PATH_LEN + SHA256_DIGEST_LENGTH)
 
 // Derivation path is m/U2F'/r'/r'/r'/r'/r'/r'/r'/r'
-#define KEY_PATH_ENTRIES (1 + KEY_PATH_LEN / sizeof(uint32_t))
+#define KEY_PATH_ENTRIES (KEY_PATH_LEN / sizeof(uint32_t))
 
 // Defined as UsbSignHandler.BOGUS_APP_ID_HASH
 // in https://github.com/google/u2f-ref-code/blob/master/u2f-chrome-extension/usbsignhandler.js#L118
@@ -103,8 +102,13 @@ uint32_t next_cid(void)
 	return cid;
 }
 
+// https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-hid-protocol-v1.2-ps-20170411.html#message--and-packet-structure
+// states the following:
+// With a packet size of 64 bytes (max for full-speed devices), this means that
+// the maximum message payload length is 64 - 7 + 128 * (64 - 5) = 7609 bytes.
+#define U2F_MAXIMUM_PAYLOAD_LENGTH 7609
 typedef struct {
-	uint8_t buf[57+127*59];
+	uint8_t buf[U2F_MAXIMUM_PAYLOAD_LENGTH];
 	uint8_t *buf_ptr;
 	uint32_t len;
 	uint8_t seq;
@@ -274,7 +278,7 @@ void u2fhid_wink(const uint8_t *buf, uint32_t len)
 		dialog_timeout = U2F_TIMEOUT;
 
 	U2FHID_FRAME f;
-	MEMSET_BZERO(&f, sizeof(f));
+	memset(&f, 0, sizeof(f));
 	f.cid = cid;
 	f.init.cmd = U2FHID_WINK;
 	f.init.bcntl = 0;
@@ -287,6 +291,8 @@ void u2fhid_init(const U2FHID_FRAME *in)
 	U2FHID_FRAME f;
 	U2FHID_INIT_RESP resp;
 
+	memset(&resp, 0, sizeof(resp));
+
 	debugLog(0, "", "u2fhid_init");
 
 	if (in->cid == 0) {
@@ -294,11 +300,11 @@ void u2fhid_init(const U2FHID_FRAME *in)
 		return;
 	}
 
-	MEMSET_BZERO(&f, sizeof(f));
+	memset(&f, 0, sizeof(f));
 	f.cid = in->cid;
 	f.init.cmd = U2FHID_INIT;
 	f.init.bcnth = 0;
-	f.init.bcntl = U2FHID_INIT_RESP_SIZE;
+	f.init.bcntl = sizeof(resp);
 
 	memcpy(resp.nonce, init_req->nonce, sizeof(init_req->nonce));
 	resp.cid = in->cid == CID_BROADCAST ? next_cid() : in->cid;
@@ -366,6 +372,11 @@ void u2fhid_msg(const APDU *a, uint32_t len)
 
 void send_u2fhid_msg(const uint8_t cmd, const uint8_t *data, const uint32_t len)
 {
+	if (len > U2F_MAXIMUM_PAYLOAD_LENGTH) {
+		debugLog(0, "", "send_u2fhid_msg failed");
+		return;
+	}
+
 	U2FHID_FRAME f;
 	uint8_t *p = (uint8_t *)data;
 	uint32_t l = len;
@@ -374,7 +385,7 @@ void send_u2fhid_msg(const uint8_t cmd, const uint8_t *data, const uint32_t len)
 
 	// debugLog(0, "", "send_u2fhid_msg");
 
-	MEMSET_BZERO(&f, sizeof(f));
+	memset(&f, 0, sizeof(f));
 	f.cid = cid;
 	f.init.cmd = cmd;
 	f.init.bcnth = len >> 8;
@@ -390,7 +401,7 @@ void send_u2fhid_msg(const uint8_t cmd, const uint8_t *data, const uint32_t len)
 	// Cont packet(s)
 	for (; l > 0; l -= psz, p += psz) {
 		// debugLog(0, "", "send_u2fhid_msg con");
-		MEMSET_BZERO(&f.cont.data, sizeof(f.cont.data));
+		memset(&f.cont.data, 0, sizeof(f.cont.data));
 		f.cont.seq = seq++;
 		psz = MIN(sizeof(f.cont.data), l);
 		memcpy(f.cont.data, p, psz);
@@ -407,7 +418,7 @@ void send_u2fhid_error(uint32_t fcid, uint8_t err)
 {
 	U2FHID_FRAME f;
 
-	MEMSET_BZERO(&f, sizeof(f));
+	memset(&f, 0, sizeof(f));
 	f.cid = fcid;
 	f.init.cmd = U2FHID_ERROR;
 	f.init.bcntl = 1;
@@ -451,18 +462,20 @@ static void getReadableAppId(const uint8_t appid[U2F_APPID_SIZE], const char **a
 static const HDNode *getDerivedNode(uint32_t *address_n, size_t address_n_count)
 {
 	static CONFIDENTIAL HDNode node;
-	if (!storage_getRootNode(&node, NIST256P1_NAME, false)) {
-		layoutHome();
-		debugLog(0, "", "ERR: Device not init");
-		return 0;
-	}
+	// if (!storage_getU2FRoot(&node)) {
+	// 	layoutHome();
+	// 	debugLog(0, "", "ERR: Device not init");
+	// 	return 0;
+	// }
 	if (!address_n || address_n_count == 0) {
 		return &node;
 	}
-	if (hdnode_private_ckd_cached(&node, address_n, address_n_count, NULL) == 0) {
-		layoutHome();
-		debugLog(0, "", "ERR: Derive private failed");
-		return 0;
+	for (size_t i = 0; i < address_n_count; i++) {
+		if (hdnode_private_ckd(&node, address_n[i]) == 0) {
+			layoutHome();
+			debugLog(0, "", "ERR: Derive private failed");
+			return 0;
+		}
 	}
 	return &node;
 }
@@ -473,14 +486,13 @@ static const HDNode *generateKeyHandle(const uint8_t app_id[], uint8_t key_handl
 
 	// Derivation path is m/U2F'/r'/r'/r'/r'/r'/r'/r'/r'
 	uint32_t key_path[KEY_PATH_ENTRIES];
-	key_path[0] = U2F_KEY_PATH;
-	for (uint32_t i = 1; i < KEY_PATH_ENTRIES; i++) {
+	for (uint32_t i = 0; i < KEY_PATH_ENTRIES; i++) {
 		// high bit for hardened keys
 		key_path[i]= 0x80000000 | random32();
 	}
 
 	// First half of keyhandle is key_path
-	memcpy(key_handle, &key_path[1], KEY_PATH_LEN);
+	memcpy(key_handle, key_path, KEY_PATH_LEN);
 
 	// prepare keypair from /random data
 	const HDNode *node = getDerivedNode(key_path, KEY_PATH_ENTRIES);
@@ -502,9 +514,8 @@ static const HDNode *generateKeyHandle(const uint8_t app_id[], uint8_t key_handl
 static const HDNode *validateKeyHandle(const uint8_t app_id[], const uint8_t key_handle[])
 {
 	uint32_t key_path[KEY_PATH_ENTRIES];
-	key_path[0] = U2F_KEY_PATH;
-	memcpy(&key_path[1], key_handle, KEY_PATH_LEN);
-	for (unsigned int i = 1; i < KEY_PATH_ENTRIES; i++) {
+	memcpy(key_path, key_handle, KEY_PATH_LEN);
+	for (unsigned int i = 0; i < KEY_PATH_ENTRIES; i++) {
 		// check high bit for hardened keys
 		if (! (key_path[i] & 0x80000000)) {
 			return NULL;
@@ -558,8 +569,6 @@ void u2f_register(const APDU *a)
 
 	// First Time request, return not present and display request dialog
 	if (last_req_state == INIT) {
-		// wake up crypto system to be ready for signing
-		getDerivedNode(NULL, 0);
 		// error: testof-user-presence is required
 		buttonUpdate(); // Clear button state
 		if (0 == memcmp(req->appId, BOGUS_APPID, U2F_APPID_SIZE)) {
@@ -585,8 +594,7 @@ void u2f_register(const APDU *a)
 	if (last_req_state == REG_PASS) {
 		uint8_t data[sizeof(U2F_REGISTER_RESP) + 2];
 		U2F_REGISTER_RESP *resp = (U2F_REGISTER_RESP *)&data;
-		MEMSET_BZERO(data, sizeof(data));
-
+		memset(data, 0, sizeof(data));
 
 		resp->registerId = U2F_REGISTER_ID;
 		resp->keyHandleLen = KEY_HANDLE_LEN;
@@ -613,7 +621,7 @@ void u2f_register(const APDU *a)
 		memcpy(sig_base.chal, req->chal, U2F_CHAL_SIZE);
 		memcpy(sig_base.keyHandle, &resp->keyHandleCertSig, KEY_HANDLE_LEN);
 		memcpy(sig_base.pubKey, &resp->pubKey, U2F_PUBKEY_LEN);
-		if (ecdsa_sign(&nist256p1, U2F_ATT_PRIV_KEY, (uint8_t *)&sig_base, sizeof(sig_base), sig, NULL, NULL) != 0) {
+		if (ecdsa_sign(&nist256p1, HASHER_SHA2, U2F_ATT_PRIV_KEY, (uint8_t *)&sig_base, sizeof(sig_base), sig, NULL, NULL) != 0) {
 			send_u2f_error(U2F_SW_WRONG_DATA);
 			return;
 		}
@@ -735,7 +743,7 @@ void u2f_authenticate(const APDU *a)
 		sig_base.flags = resp->flags;
 		memcpy(sig_base.ctr, resp->ctr, 4);
 		memcpy(sig_base.chal, req->chal, U2F_CHAL_SIZE);
-		if (ecdsa_sign(&nist256p1, node->private_key, (uint8_t *)&sig_base, sizeof(sig_base), sig, NULL, NULL) != 0) {
+		if (ecdsa_sign(&nist256p1, HASHER_SHA2, node->private_key, (uint8_t *)&sig_base, sizeof(sig_base), sig, NULL, NULL) != 0) {
 			send_u2f_error(U2F_SW_WRONG_DATA);
 			return;
 		}
