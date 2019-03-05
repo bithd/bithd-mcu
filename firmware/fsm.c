@@ -235,35 +235,7 @@ void fsm_msgGetFeatures(GetFeatures *msg)
 		resp->has_label = true;
 		strlcpy(resp->label, storage.label, sizeof(resp->label));
 	}
-	
-	_Static_assert(pb_arraysize(Features, coins) >= COINS_COUNT, "Features.coins max_count not large enough");
-	resp->coins_count = COINS_COUNT;
-	for (int i = 0; i < COINS_COUNT; i++) {
-		if (coins[i].coin_name) {
-			resp->coins[i].has_coin_name = true;
-			strlcpy(resp->coins[i].coin_name, coins[i].coin_name, sizeof(resp->coins[i].coin_name));
-		}
-		if (coins[i].coin_shortcut) {
-			resp->coins[i].has_coin_shortcut = true;
-			strlcpy(resp->coins[i].coin_shortcut, coins[i].coin_shortcut + 1, sizeof(resp->coins[i].coin_shortcut));
-		}
-		resp->coins[i].has_address_type = coins[i].has_address_type;
-		resp->coins[i].address_type = coins[i].address_type;
-		resp->coins[i].has_maxfee_kb = true;
-		resp->coins[i].maxfee_kb = coins[i].maxfee_kb;
-		resp->coins[i].has_address_type_p2sh = coins[i].has_address_type_p2sh;
-		resp->coins[i].address_type_p2sh = coins[i].address_type_p2sh;
-		resp->coins[i].has_xpub_magic = coins[i].xpub_magic != 0;
-		resp->coins[i].xpub_magic = coins[i].xpub_magic;
-		resp->coins[i].has_xprv_magic = coins[i].xprv_magic != 0;
-		resp->coins[i].xprv_magic = coins[i].xprv_magic;
-		resp->coins[i].has_segwit = true;
-		resp->coins[i].segwit = coins[i].has_segwit;
-		resp->coins[i].has_forkid = coins[i].has_forkid;
-		resp->coins[i].forkid = coins[i].forkid;
-		resp->coins[i].has_force_bip143 = true;
-		resp->coins[i].force_bip143 = coins[i].force_bip143;
-	}
+
 	resp->has_initialized = true; resp->initialized = storage_isInitialized();
 	resp->has_imported = true; resp->imported = storage.has_imported && storage.imported;
 	resp->has_pin_cached = true; resp->pin_cached = session_isPinCached();
@@ -506,7 +478,7 @@ void fsm_msgSignTx(SignTx *msg)
 	const HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, 0, 0);
 	if (!node) return;
 
-	signing_init(msg->inputs_count, msg->outputs_count, coin, node, msg->version, msg->lock_time);
+	signing_init(msg, coin, node);
 }
 
 void fsm_msgTxAck(TxAck *msg)
@@ -768,14 +740,14 @@ void fsm_msgGetAddress(GetAddress *msg)
 			}
 		}
 
-		if (mismatch) {
-			layoutDialogSwipe(&bmp_icon_warning, _("Abort"), _("Continue"), NULL, _("Wrong address path"), _("for selected coin."), NULL, _("Continue at your"), _("own risk!"), NULL);
-			if (!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
-				fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
-				layoutHome();
-				return;
-			}
-		}
+		// if (mismatch) {
+		// 	layoutDialogSwipe(&bmp_icon_warning, _("Abort"), _("Continue"), NULL, _("Wrong address path"), _("for selected coin."), NULL, _("Continue at your"), _("own risk!"), NULL);
+		// 	if (!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
+		// 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		// 		layoutHome();
+		// 		return;
+		// 	}
+		// }
 
 		bool qrcode = false;
 		for (;;) {
@@ -813,7 +785,7 @@ void fsm_msgEthereumGetAddress(EthereumGetAddress *msg)
 		strlcpy(desc, "Address:", sizeof(desc));
 
 		char address[43] = { '0', 'x' };
-		ethereum_address_checksum(resp->address.bytes, address + 2);
+		ethereum_address_checksum(resp->address.bytes, address + 2, false, 0);
 
 		bool qrcode = false;
 		for (;;) {
@@ -862,7 +834,7 @@ void fsm_msgEthereumVerifyMessage(EthereumVerifyMessage *msg)
 	}
 
 	char address[43] = { '0', 'x' };
-	ethereum_address_checksum(msg->address.bytes, address + 2);
+	ethereum_address_checksum(msg->address.bytes, address + 2, false, 0);
 	layoutVerifyAddress(address);
 	if (!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);

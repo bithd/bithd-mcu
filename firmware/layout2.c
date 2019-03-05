@@ -36,33 +36,6 @@
 
 #define BITCOIN_DIVISIBILITY (8)
 
-// split longer string into 4 rows, rowlen chars each
-static const char **split_message(const uint8_t *msg, uint32_t len, uint32_t rowlen)
-{
-	static char str[4][32 + 1];
-	if (rowlen > 32) {
-		rowlen = 32;
-	}
-	memset(str, 0, sizeof(str));
-	strlcpy(str[0], (char *)msg, rowlen + 1);
-	if (len > rowlen) {
-		strlcpy(str[1], (char *)msg + rowlen, rowlen + 1);
-	}
-	if (len > rowlen * 2) {
-		strlcpy(str[2], (char *)msg + rowlen * 2, rowlen + 1);
-	}
-	if (len > rowlen * 3) {
-		strlcpy(str[3], (char *)msg + rowlen * 3, rowlen + 1);
-	}
-	if (len > rowlen * 4) {
-		str[3][rowlen - 1] = '.';
-		str[3][rowlen - 2] = '.';
-		str[3][rowlen - 3] = '.';
-	}
-	static const char *ret[4] = { str[0], str[1], str[2], str[3] };
-	return ret;
-}
-
 void *layoutLast = layoutHome;
 
 void layoutDialogSwipe(const BITMAP *icon, const char *btnNo, const char *btnYes, const char *desc, const char *line1, const char *line2, const char *line3, const char *line4, const char *line5, const char *line6)
@@ -860,6 +833,100 @@ void layoutCosiCommitSign(const uint32_t *address_n, size_t address_n_count, con
 		str[0], str[1], str[2], str[3], NULL, NULL);
 }
 
+uint32_t reversebytes_uint32t(uint32_t value){
+    return (value & 0x000000FFU) << 24 | (value & 0x0000FF00U) << 8 | 
+        (value & 0x00FF0000U) >> 8 | (value & 0xFF000000U) >> 24; 
+}
 
+uint64_t reversebytes_uint64t(uint64_t value){
+	uint64_t high_uint64 = (uint64_t) reversebytes_uint32t((uint32_t)value);
+	uint64_t low_uint64 = (uint64_t) reversebytes_uint32t((uint32_t)(value >> 32));
+	return (high_uint64 << 32) + low_uint64;
+}
+
+void layoutConfirmOmni(const uint8_t *data, uint32_t size)
+{
+	const char *desc;
+	char str_out[32];
+	const uint32_t tx_type = *(const uint32_t *)(data + 4);
+	if (tx_type == 0x00000000 && size == 20) {  // OMNI simple send
+		desc = _("Simple send of ");
+		const uint32_t currency = reversebytes_uint32t(*(const uint32_t *)(data + 8));
+		const char *suffix = "UNKN";
+		switch (currency) {
+			case 1:
+				suffix = "OMNI";
+				break;
+			case 2:
+				suffix = "tOMNI";
+				break;
+			case 3:
+				suffix = "MAID";
+				break;
+			case 31:
+				suffix = "USDT";
+				break;
+		}
+		const uint64_t amount = reversebytes_uint64t(*(const uint64_t *)(data + 12));
+		bn_format_uint64(amount, NULL, suffix, BITCOIN_DIVISIBILITY, 0, false, str_out, sizeof(str_out));
+	} else {
+		desc = _("Unknown transaction");
+		str_out[0] = 0;
+	}
+	layoutDialogSwipe(&bmp_icon_question,
+		_("Cancel"),
+		_("Confirm"),
+		NULL,
+		_("Confirm OMNI Transaction:"),
+		NULL,
+		desc,
+		NULL,
+		str_out,
+		NULL
+	);
+}
+
+// split longer string into 4 rows, rowlen chars each
+const char **split_message(const uint8_t *msg, uint32_t len, uint32_t rowlen) 
+{
+	static char str[4][32 + 1];
+	if (rowlen > 32) {
+		rowlen = 32;
+	}
+	memset(str, 0, sizeof(str));
+	strlcpy(str[0], (char *)msg, rowlen + 1);
+	if (len > rowlen) {
+		strlcpy(str[1], (char *)msg + rowlen, rowlen + 1);
+	}
+	if (len > rowlen * 2) {
+		strlcpy(str[2], (char *)msg + rowlen * 2, rowlen + 1);
+	}
+	if (len > rowlen * 3) {
+		strlcpy(str[3], (char *)msg + rowlen * 3, rowlen + 1);
+	}
+	if (len > rowlen * 4) {
+		str[3][rowlen - 1] = '.';
+		str[3][rowlen - 2] = '.';
+		str[3][rowlen - 3] = '.';
+	}
+	static const char *ret[4] = { str[0], str[1], str[2], str[3] };
+	return ret;
+}
+
+const char **split_message_hex(const uint8_t *msg, uint32_t len)
+{
+	char hex[32 * 2 + 1];
+	memset(hex, 0, sizeof(hex));
+	uint32_t size = len;
+	if (len > 32) {
+		size = 32;
+	}
+	data2hex(msg, size, hex);
+	if (len > 32) {
+		hex[63] = '.';
+		hex[62] = '.';
+	}
+	return split_message((const uint8_t *)hex, size * 2, 16);
+}
 //FD6F44BD04AD10B3E695CA74763B0C33629A148EB395C9977F94B42483084361263881A36290B9336510F769BF975512B435F53B891942ACA69E7A3AA662B132
 //fd6f44bd04ad10b3e695ca74763b0c33629a148eb395c9977f94b42483084361d9c77e5c9d6f46cc9aef08964068aaec0678e7ab262f5d8f1933e45229d3900f

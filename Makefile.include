@@ -11,7 +11,7 @@ AS      = $(PREFIX)as
 FLASH   = st-flash
 OPENOCD = openocd
 
-OPTFLAGS ?= -O3
+OPTFLAGS ?= -Os
 DBGFLAGS ?= -g -DNDEBUG
 CPUFLAGS ?= -mcpu=cortex-m3 -mthumb
 FPUFLAGS ?= -msoft-float

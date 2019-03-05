@@ -20,19 +20,18 @@
 #include <string.h>
 #include "crypto.h"
 #include "sha2.h"
-#include "ripemd160.h"
 #include "pbkdf2.h"
-#include "aes.h"
+#include "aes/aes.h"
 #include "hmac.h"
 #include "bip32.h"
 #include "layout.h"
 #include "curves.h"
 #include "secp256k1.h"
 #include "address.h"
-#include "macros.h"
 #include "coins.h"
 #include "base58.h"
 #include "segwit_addr.h"
+#include "cash_addr.h"
 
 uint32_t ser_length(uint32_t len, uint8_t *out)
 {
@@ -54,21 +53,21 @@ uint32_t ser_length(uint32_t len, uint8_t *out)
 	return 5;
 }
 
-uint32_t ser_length_hash(SHA256_CTX *ctx, uint32_t len)
+uint32_t ser_length_hash(Hasher *hasher, uint32_t len)
 {
 	if (len < 253) {
-		sha256_Update(ctx, (const uint8_t *)&len, 1);
+		hasher_Update(hasher, (const uint8_t *)&len, 1);
 		return 1;
 	}
 	if (len < 0x10000) {
 		uint8_t d = 253;
-		sha256_Update(ctx, &d, 1);
-		sha256_Update(ctx, (const uint8_t *)&len, 2);
+		hasher_Update(hasher, &d, 1);
+		hasher_Update(hasher, (const uint8_t *)&len, 2);
 		return 3;
 	}
 	uint8_t d = 254;
-	sha256_Update(ctx, &d, 1);
-	sha256_Update(ctx, (const uint8_t *)&len, 4);
+	hasher_Update(hasher, &d, 1);
+	hasher_Update(hasher, (const uint8_t *)&len, 4);
 	return 5;
 }
 
@@ -83,7 +82,7 @@ uint32_t deser_length(const uint8_t *in, uint32_t *out)
 		return 1 + 2;
 	}
 	if (in[0] == 254) {
-		*out = in[1] + (in[2] << 8) + (in[3] << 16) + (in[4] << 24);
+		*out = in[1] + (in[2] << 8) + (in[3] << 16) + ((uint32_t) in[4] << 24);
 		return 1 + 4;
 	}
 	*out = 0; // ignore 64 bit
@@ -93,7 +92,7 @@ uint32_t deser_length(const uint8_t *in, uint32_t *out)
 int sshMessageSign(HDNode *node, const uint8_t *message, size_t message_len, uint8_t *signature)
 {
 	signature[0] = 0; // prefix: pad with zero, so all signatures are 65 bytes
-	return hdnode_sign(node, message, message_len, signature + 1, NULL, NULL);
+	return hdnode_sign(node, message, message_len, HASHER_SHA2, signature + 1, NULL, NULL);
 }
 
 int gpgMessageSign(HDNode *node, const uint8_t *message, size_t message_len, uint8_t *signature)
@@ -102,7 +101,7 @@ int gpgMessageSign(HDNode *node, const uint8_t *message, size_t message_len, uin
 	const curve_info *ed25519_curve_info = get_curve_by_name(ED25519_NAME);
 	if (ed25519_curve_info && node->curve == ed25519_curve_info) {
 		// GPG supports variable size digest for Ed25519 signatures
-		return hdnode_sign(node, message, message_len, signature + 1, NULL, NULL);
+		return hdnode_sign(node, message, message_len, 0, signature + 1, NULL, NULL);
 	} else {
 		// Ensure 256-bit digest before proceeding
 		if (message_len != 32) {
@@ -112,18 +111,22 @@ int gpgMessageSign(HDNode *node, const uint8_t *message, size_t message_len, uin
 	}
 }
 
-int cryptoMessageSign(const CoinInfo *coin, HDNode *node, InputScriptType script_type, const uint8_t *message, size_t message_len, uint8_t *signature)
-{
-	SHA256_CTX ctx;
-	sha256_Init(&ctx);
-	sha256_Update(&ctx, (const uint8_t *)coin->signed_message_header, strlen(coin->signed_message_header));
+static void cryptoMessageHash(const CoinInfo *coin, const uint8_t *message, size_t message_len, uint8_t hash[HASHER_DIGEST_LENGTH]) {
+	Hasher hasher;
+	hasher_Init(&hasher, coin->curve->hasher_sign);
+	hasher_Update(&hasher, (const uint8_t *)coin->signed_message_header, strlen(coin->signed_message_header));
 	uint8_t varint[5];
 	uint32_t l = ser_length(message_len, varint);
-	sha256_Update(&ctx, varint, l);
-	sha256_Update(&ctx, message, message_len);
-	uint8_t hash[32];
-	sha256_Final(&ctx, hash);
-	sha256_Raw(hash, 32, hash);
+	hasher_Update(&hasher, varint, l);
+	hasher_Update(&hasher, message, message_len);
+	hasher_Final(&hasher, hash);
+}
+
+int cryptoMessageSign(const CoinInfo *coin, HDNode *node, InputScriptType script_type, const uint8_t *message, size_t message_len, uint8_t *signature)
+{
+	uint8_t hash[HASHER_DIGEST_LENGTH];
+	cryptoMessageHash(coin, message, message_len, hash);
+
 	uint8_t pby;
 	int result = hdnode_sign_digest(node, hash, signature + 1, &pby, NULL);
 	if (result == 0) {
@@ -152,24 +155,15 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message, size_t mes
 		return 1;
 	}
 
-	// calculate hash
-	SHA256_CTX ctx;
-	sha256_Init(&ctx);
-	sha256_Update(&ctx, (const uint8_t *)coin->signed_message_header, strlen(coin->signed_message_header));
-	uint8_t varint[5];
-	uint32_t l = ser_length(message_len, varint);
-	sha256_Update(&ctx, varint, l);
-	sha256_Update(&ctx, message, message_len);
-	uint8_t hash[32];
-	sha256_Final(&ctx, hash);
-	sha256_Raw(hash, 32, hash);
+	uint8_t hash[HASHER_DIGEST_LENGTH];
+	cryptoMessageHash(coin, message, message_len, hash);
 
 	uint8_t recid = (signature[0] - 27) % 4;
 	bool compressed = signature[0] >= 31;
 
 	// check if signature verifies the digest and recover the public key
 	uint8_t pubkey[65];
-	if (ecdsa_verify_digest_recover(&secp256k1, pubkey, signature + 1, hash, recid) != 0) {
+	if (ecdsa_recover_pub_from_sig(coin->curve->params, pubkey, signature + 1, hash, recid) != 0) {
 		return 3;
 	}
 	// convert public key to compressed pubkey if necessary
@@ -183,8 +177,15 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message, size_t mes
 
 	// p2pkh
 	if (signature[0] >= 27 && signature[0] <= 34) {
-		size_t len = base58_decode_check(address, addr_raw, MAX_ADDR_RAW_SIZE);
-		ecdsa_get_address_raw(pubkey, coin->address_type, recovered_raw);
+		size_t len;
+		if (coin->cashaddr_prefix) {
+			if (!cash_addr_decode(addr_raw, &len, coin->cashaddr_prefix, address)) {
+				return 2;
+			}
+		} else {
+			len = base58_decode_check(address, coin->curve->hasher_base58, addr_raw, MAX_ADDR_RAW_SIZE);
+		}
+		ecdsa_get_address_raw(pubkey, coin->address_type, coin->curve->hasher_pubkey, recovered_raw);
 		if (memcmp(recovered_raw, addr_raw, len) != 0
 			|| len != address_prefix_bytes_len(coin->address_type) + 20) {
 			return 2;
@@ -192,8 +193,8 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message, size_t mes
 	} else
 	// segwit-in-p2sh
 	if (signature[0] >= 35 && signature[0] <= 38) {
-		size_t len = base58_decode_check(address, addr_raw, MAX_ADDR_RAW_SIZE);
-		ecdsa_get_address_segwit_p2sh_raw(pubkey, coin->address_type_p2sh, recovered_raw);
+		size_t len = base58_decode_check(address, coin->curve->hasher_base58, addr_raw, MAX_ADDR_RAW_SIZE);
+		ecdsa_get_address_segwit_p2sh_raw(pubkey, coin->address_type_p2sh, coin->curve->hasher_pubkey, recovered_raw);
 		if (memcmp(recovered_raw, addr_raw, len) != 0
 			|| len != address_prefix_bytes_len(coin->address_type_p2sh) + 20) {
 			return 2;
@@ -207,7 +208,7 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message, size_t mes
 			|| !segwit_addr_decode(&witver, recovered_raw, &len, coin->bech32_prefix, address)) {
 			return 4;
 		}
-		ecdsa_get_pubkeyhash(pubkey, addr_raw);
+		ecdsa_get_pubkeyhash(pubkey, coin->curve->hasher_pubkey, addr_raw);
 		if (memcmp(recovered_raw, addr_raw, len) != 0
 			|| witver != 0 || len != 20) {
 			return 2;
@@ -333,11 +334,11 @@ int cryptoMessageDecrypt(curve_point *nonce, uint8_t *payload, size_t payload_le
 }
 */
 
-uint8_t *cryptoHDNodePathToPubkey(const HDNodePathType *hdnodepath)
+uint8_t *cryptoHDNodePathToPubkey(const CoinInfo *coin, const HDNodePathType *hdnodepath)
 {
 	if (!hdnodepath->node.has_public_key || hdnodepath->node.public_key.size != 33) return 0;
 	static HDNode node;
-	if (hdnode_from_xpub(hdnodepath->node.depth, hdnodepath->node.child_num, hdnodepath->node.chain_code.bytes, hdnodepath->node.public_key.bytes, SECP256K1_NAME, &node) == 0) {
+	if (hdnode_from_xpub(hdnodepath->node.depth, hdnodepath->node.child_num, hdnodepath->node.chain_code.bytes, hdnodepath->node.public_key.bytes, coin->curve_name, &node) == 0) {
 		return 0;
 	}
 	layoutProgressUpdate(true);
@@ -350,10 +351,10 @@ uint8_t *cryptoHDNodePathToPubkey(const HDNodePathType *hdnodepath)
 	return node.public_key;
 }
 
-int cryptoMultisigPubkeyIndex(const MultisigRedeemScriptType *multisig, const uint8_t *pubkey)
+int cryptoMultisigPubkeyIndex(const CoinInfo *coin, const MultisigRedeemScriptType *multisig, const uint8_t *pubkey)
 {
 	for (size_t i = 0; i < multisig->pubkeys_count; i++) {
-		const uint8_t *node_pubkey = cryptoHDNodePathToPubkey(&(multisig->pubkeys[i]));
+		const uint8_t *node_pubkey = cryptoHDNodePathToPubkey(coin, &(multisig->pubkeys[i]));
 		if (node_pubkey && memcmp(node_pubkey, pubkey, 33) == 0) {
 			return i;
 		}

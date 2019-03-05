@@ -28,13 +28,14 @@
 #include <sha2.h>
 #include <pb.h>
 #include "coins.h"
-#include "types.pb.h"
+#include "hasher.h"
+#include "messages.pb.h"
 
 #define ser_length_size(len) ((len) < 253 ? 1 : (len) < 0x10000 ? 3 : 5)
 
 uint32_t ser_length(uint32_t len, uint8_t *out);
 
-uint32_t ser_length_hash(SHA256_CTX *ctx, uint32_t len);
+uint32_t ser_length_hash(Hasher *hasher, uint32_t len);
 
 int sshMessageSign(HDNode *node, const uint8_t *message, size_t message_len, uint8_t *signature);
 
@@ -50,9 +51,9 @@ int cryptoMessageEncrypt(curve_point *pubkey, const uint8_t *msg, size_t msg_siz
 int cryptoMessageDecrypt(curve_point *nonce, uint8_t *payload, size_t payload_len, const uint8_t *hmac, size_t hmac_len, const uint8_t *privkey, uint8_t *msg, size_t *msg_len, bool *display_only, bool *signing, uint8_t *address_raw);
 */
 
-uint8_t *cryptoHDNodePathToPubkey(const HDNodePathType *hdnodepath);
+uint8_t *cryptoHDNodePathToPubkey(const CoinInfo *coin, const HDNodePathType *hdnodepath);
 
-int cryptoMultisigPubkeyIndex(const MultisigRedeemScriptType *multisig, const uint8_t *pubkey);
+int cryptoMultisigPubkeyIndex(const CoinInfo *coin, const MultisigRedeemScriptType *multisig, const uint8_t *pubkey);
 
 int cryptoMultisigFingerprint(const MultisigRedeemScriptType *multisig, uint8_t *hash);
 
