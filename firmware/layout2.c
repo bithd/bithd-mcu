@@ -833,6 +833,17 @@ void layoutCosiCommitSign(const uint32_t *address_n, size_t address_n_count, con
 		str[0], str[1], str[2], str[3], NULL, NULL);
 }
 
+uint32_t reversebytes_uint32t(uint32_t value){
+    return (value & 0x000000FFU) << 24 | (value & 0x0000FF00U) << 8 | 
+        (value & 0x00FF0000U) >> 8 | (value & 0xFF000000U) >> 24; 
+}
+
+uint64_t reversebytes_uint64t(uint64_t value){
+	uint64_t high_uint64 = (uint64_t) reversebytes_uint32t((uint32_t)value);
+	uint64_t low_uint64 = (uint64_t) reversebytes_uint32t((uint32_t)(value >> 32));
+	return (high_uint64 << 32) + low_uint64;
+}
+
 void layoutConfirmOmni(const uint8_t *data, uint32_t size)
 {
 	const char *desc;
@@ -840,7 +851,7 @@ void layoutConfirmOmni(const uint8_t *data, uint32_t size)
 	const uint32_t tx_type = *(const uint32_t *)(data + 4);
 	if (tx_type == 0x00000000 && size == 20) {  // OMNI simple send
 		desc = _("Simple send of ");
-		const uint32_t currency = *(const uint32_t *)(data + 8);
+		const uint32_t currency = reversebytes_uint32t(*(const uint32_t *)(data + 8));
 		const char *suffix = "UNKN";
 		switch (currency) {
 			case 1:
@@ -856,7 +867,7 @@ void layoutConfirmOmni(const uint8_t *data, uint32_t size)
 				suffix = "USDT";
 				break;
 		}
-		const uint64_t amount = *(const uint64_t *)(data + 12);
+		const uint64_t amount = reversebytes_uint64t(*(const uint64_t *)(data + 12));
 		bn_format_uint64(amount, NULL, suffix, BITCOIN_DIVISIBILITY, 0, false, str_out, sizeof(str_out));
 	} else {
 		desc = _("Unknown transaction");
