@@ -4,6 +4,7 @@
 #define speeddisplay 2  //max 8／min 1
 #define speeddisplay2 1 //max 8／min 1
 
+extern void shutdowndisplay(void);
 extern void blueParingdisplay(unsigned char* buf);
 extern void bluenamedisplay(unsigned char* buf);
 extern void bithdapp(void);

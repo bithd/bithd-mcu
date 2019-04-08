@@ -136,6 +136,21 @@ void bluenamedisplay(unsigned char* buf)
 
 }
 
+void shutdowndisplay(void)
+{    const char *action;
+
+    oledClear();
+    action = _("Power off?");
+    oledDrawString(38, 24, action);
+    action = _("Cancel");
+    oledDrawString(94,1, action);
+	oledInvert(93, 0,128,8);
+    action = _("Ok");
+    oledDrawString(115,55,action);
+	oledInvert(114,54,128,64);
+    oledRefresh();
+}
+
 void blueParingdisplay(unsigned char* buf)
 {
     unsigned char xy=0;
@@ -527,30 +542,19 @@ void displaytimer(void)
     {
 	    oledClear();
 
-	    if(Timerdisplaybuf.chargingstatus==0)
-	    {
-            oledDrawBitmap(xy, 0,&bitpiebatfull);
-            xy=20;
-            for(i=0;i<(100-Timerdisplaybuf.bat_vol)/13;i++)
-            {
-                _oledbuffer[OLED_BUFSIZE-xy]=0x18;
-                _oledbuffer[OLED_BUFSIZE-xy+1]=0x18;
-                _oledbuffer[OLED_BUFSIZE-xy-128]=0x18;
-                _oledbuffer[OLED_BUFSIZE-xy+1-128]=0x18;
-                xy=xy-2;
-            }
-	    }
-	    else
-	    {
-            if(Timerdisplaybuf.chargingstatus==1)
-            {
-                oledDrawBitmap(xy, 0,&bitpiebatcharg);
-            }
-            else
-            {
-                oledDrawBitmap(xy, 0,&bitpiebatfull);
-	        }
-	    }
+        oledDrawBitmap(xy, 0,&bitpiebatfull);
+        xy=16;
+        for(i=0;i<4-(Timerdisplaybuf.bat_vol/20);i++)
+        {
+            oledBox(xy,4,xy+2,10,false);
+            xy=xy-4;
+        }
+        
+        xy = 23;
+        if(Timerdisplaybuf.chargingstatus==1)
+        {
+             oledDrawBitmap(xy, 0,&bitpiebatcharg);
+        }
 
 	    xy=112;
 	    if(Timerdisplaybuf.bluetoothconnetstatus==0)

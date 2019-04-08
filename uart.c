@@ -388,6 +388,10 @@ void Uart_cmdprogam(void)
 		case 0x08://bluetooth name display
 					stm32workstatus=Stm32_idleMode;
 					bluenamedisplay(uart_communicate_buf.data);
+		break;
+		case 0x0A://shutdown display
+					stm32workstatus=Stm32_idleMode;
+					shutdowndisplay();
         break;
 
 	}
