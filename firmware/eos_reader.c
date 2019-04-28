@@ -1,6 +1,6 @@
 #include "eos_reader.h"
 
-int check_available(EosReaderCTX* reader_ctx, int num) 
+bool check_available(EosReaderCTX* reader_ctx, int num) 
 {
     return reader_ctx->_length - reader_ctx->_index > num;
 }
@@ -12,28 +12,28 @@ void reader_init(EosReaderCTX* reader_ctx, uint8_t * buf, int len)
     reader_ctx->_length = len;
 }
 
-int reader_get(EosReaderCTX* reader_ctx, uint8_t * b) 
+bool reader_get(EosReaderCTX* reader_ctx, uint8_t * b) 
 {
     if(check_available(reader_ctx, 1)) {
         *b = reader_ctx->_buf[reader_ctx->_index++];
-        return SUCCESS;
+        return true;
     }
-    return FAILED;
+    return false;
 }
 
 
-int reader_get_short(EosReaderCTX* reader_ctx, uint16_t * s)
+bool reader_get_short(EosReaderCTX* reader_ctx, uint16_t * s)
 {
     if(check_available(reader_ctx, 2)){
         *s = (((reader_ctx->_buf[reader_ctx->_index++] & 0xFF)) 
             | ((reader_ctx->_buf[reader_ctx->_index++] & 0xFF) << 8)) 
             & 0xFFFF;
-        return SUCCESS;
+        return true;
     }
-    return FAILED;
+    return false;
 }
 
-int reader_get_int(EosReaderCTX* reader_ctx, uint32_t *i)
+bool reader_get_int(EosReaderCTX* reader_ctx, uint32_t *i)
 {
     if(check_available(reader_ctx, 4)){
         *i = (((reader_ctx->_buf[reader_ctx->_index++] & 0xFF)) 
@@ -41,12 +41,12 @@ int reader_get_int(EosReaderCTX* reader_ctx, uint32_t *i)
             | ((reader_ctx->_buf[reader_ctx->_index++] & 0xFF) << 16)
             | ((reader_ctx->_buf[reader_ctx->_index++] & 0xFF) << 24))
             & 0xFFFFFFFF;
-        return SUCCESS;
+        return true;
     }
-    return FAILED;
+    return false;
 }
 
-int reader_get_long(EosReaderCTX* reader_ctx, uint64_t *l)
+bool reader_get_long(EosReaderCTX* reader_ctx, uint64_t *l)
 {
     if(check_available(reader_ctx, 8)){
         *l = (((uint64_t)(reader_ctx->_buf[reader_ctx->_index++] & 0xFFL)) 
@@ -58,22 +58,22 @@ int reader_get_long(EosReaderCTX* reader_ctx, uint64_t *l)
             | (((uint64_t)reader_ctx->_buf[reader_ctx->_index++] & 0xFFL) << 48) 
             | (((uint64_t)reader_ctx->_buf[reader_ctx->_index++] & 0xFFL) << 56)) 
             & 0xFFFFFFFFFFFFFFFF;
-        return SUCCESS;
+        return true;
     }
-    return FAILED;
+    return false;
 }
 
-int reader_get_bytes(EosReaderCTX* reader_ctx, uint8_t *bytes, size_t len) 
+bool reader_get_bytes(EosReaderCTX* reader_ctx, uint8_t *bytes, size_t len) 
 {
     if(check_available(reader_ctx, len)) {
         memcpy(bytes, reader_ctx->_buf + reader_ctx->_index, len);
         reader_ctx->_index += len;
-        return SUCCESS;
+        return true;
     }
-    return FAILED;
+    return false;
 }
 
-int reader_get_variable_uint(EosReaderCTX* reader_ctx, uint64_t *val)
+bool reader_get_variable_uint(EosReaderCTX* reader_ctx, uint64_t *val)
 {
     int i = 0;
     uint64_t v = 0;

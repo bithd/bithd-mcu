@@ -5,5 +5,5 @@
 
 void transcation_reader_init(EosReaderCTX *, uint8_t *, int);
 
-int transaction_reader_get(EosReaderCTX *, EosTransaction *);
+bool transaction_reader_get(EosReaderCTX *, EosTransaction *);
 #endif

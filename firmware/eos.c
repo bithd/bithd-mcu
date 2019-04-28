@@ -789,10 +789,10 @@ bool confirm_eosio_msig_propose(EosReaderCTX *ctx)
 	for (uint8_t i = 0; i < propose.requested_size; i ++ ) {
 		memset(&requested, 0, sizeof(EosPermissionLevel));
 		if (!reader_get_long(ctx, &requested.actor)) {
-             return FAILED;
+             return false;
         }
         if (!reader_get_long(ctx, &requested.permission)) {
-            return FAILED;
+            return false;
         }
 		// show requested ?
 	} 
@@ -1001,7 +1001,9 @@ bool confirm_eosio_msig_exec(EosReaderCTX *ctx)
 bool confirm_action(EosReaderCTX *ctx)
 {
 	EosAction action;
-	action_reader_next(ctx, &action);	
+	if (!action_reader_next(ctx, &action)) {
+		return false;
+	}
 	if (action.account == EOSIO) {
 		switch (action.name) 
 		{

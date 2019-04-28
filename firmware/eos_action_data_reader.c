@@ -6,298 +6,298 @@ void action_data_reader_init(EosReaderCTX *_ctx, uint8_t *buf, int len)
     reader_init(_ctx, buf, len);
 }
 
-int reader_get_buyram(EosReaderCTX *_ctx, EosioBuyram *buyram) 
+bool reader_get_buyram(EosReaderCTX *_ctx, EosioBuyram *buyram) 
 {
     if (!reader_get_long(_ctx, &buyram->from)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &buyram->receiver)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &buyram->quantity.amount)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &buyram->quantity.symbol)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_buyram_bytes(EosReaderCTX *_ctx, EosioBuyramBytes *buyram_bytes) 
+bool reader_get_buyram_bytes(EosReaderCTX *_ctx, EosioBuyramBytes *buyram_bytes) 
 {
     if (!reader_get_long(_ctx, &buyram_bytes->from)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &buyram_bytes->receiver)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_int(_ctx, &buyram_bytes->bytes)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_sellram(EosReaderCTX *_ctx, EosioSellram *sellram)
+bool reader_get_sellram(EosReaderCTX *_ctx, EosioSellram *sellram)
 {
     if (!reader_get_long(_ctx, &sellram->from)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &sellram->bytes)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_delegage(EosReaderCTX *_ctx, EosioDelegate *delegate) 
+bool reader_get_delegage(EosReaderCTX *_ctx, EosioDelegate *delegate) 
 {
     if (!reader_get_long(_ctx, &delegate->from)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &delegate->receiver)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &delegate->net_quantity.amount)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &delegate->net_quantity.symbol)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &delegate->cpu_quantity.amount)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &delegate->cpu_quantity.symbol)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get(_ctx, &delegate->tansfer)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;    
+    return true;    
 }
 
-int reader_get_undelegate(EosReaderCTX *_ctx, EosioUndelegate *undelegate)
+bool reader_get_undelegate(EosReaderCTX *_ctx, EosioUndelegate *undelegate)
 {
    if (!reader_get_long(_ctx, &undelegate->from)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &undelegate->receiver)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &undelegate->net_quantity.amount)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &undelegate->net_quantity.symbol)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &undelegate->cpu_quantity.amount)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &undelegate->cpu_quantity.symbol)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS; 
+    return true; 
 }
 
-int reader_get_vote_producer(EosReaderCTX *_ctx, EosioVoteProducer *vote)
+bool reader_get_vote_producer(EosReaderCTX *_ctx, EosioVoteProducer *vote)
 {
     if (!reader_get_long(_ctx, &vote->voter)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &vote->proxy)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_variable_uint(_ctx, &vote->producer_size)) {
-        return FAILED;
+        return false;
     }
     if (vote->producer_size > VOTE_PRODUCER_MAX_COUNT) {
-        return FAILED;
+        return false;
     }
     for (uint8_t i = 0; i < vote->producer_size; i++) {
         if (!reader_get_long(_ctx, vote->producers + i)) {
-            return FAILED;
+            return false;
         }
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_transfer(EosReaderCTX *_ctx, EosioTokenTransfer *transfer) 
+bool reader_get_transfer(EosReaderCTX *_ctx, EosioTokenTransfer *transfer) 
 {
     if (!reader_get_long(_ctx, &transfer->from)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &transfer->to)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &transfer->quantity.amount)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &transfer->quantity.symbol)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_variable_uint(_ctx, &transfer->memo_size)) {
-        return FAILED;
+        return false;
     }
     if (transfer->memo_size > TRANSFER_MEMO_MAX_SIZE) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_bytes(_ctx, (uint8_t *) &transfer->memo, (size_t)transfer->memo_size)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_propose(EosReaderCTX *_ctx, EosioMsigPropose *propose) 
+bool reader_get_propose(EosReaderCTX *_ctx, EosioMsigPropose *propose) 
 {
     if (!reader_get_long(_ctx, &propose->proposer)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &propose->proposal_name)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_variable_uint(_ctx, &propose->requested_size)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_approve(EosReaderCTX *_ctx, EosioMsigApprove *approve)
+bool reader_get_approve(EosReaderCTX *_ctx, EosioMsigApprove *approve)
 {
     if (!reader_get_long(_ctx, &approve->proposer)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &approve->proposal_name)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &approve->level.actor)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &approve->level.permission)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_cancel(EosReaderCTX *_ctx, EosioMsigCancel *cancel) 
+bool reader_get_cancel(EosReaderCTX *_ctx, EosioMsigCancel *cancel) 
 {
     if (!reader_get_long(_ctx, &cancel->proposer)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &cancel->proposal_name)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &cancel->canceler)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_exec(EosReaderCTX *_ctx, EosioMsigExec *exec)
+bool reader_get_exec(EosReaderCTX *_ctx, EosioMsigExec *exec)
 {
     if (!reader_get_long(_ctx, &exec->proposer)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &exec->proposal_name)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &exec->executer)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_unapprove(EosReaderCTX *_ctx, EosioMsigUnapprove *unapprove)
+bool reader_get_unapprove(EosReaderCTX *_ctx, EosioMsigUnapprove *unapprove)
 {
     if (!reader_get_long(_ctx, &unapprove->proposer)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &unapprove->proposal_name)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &unapprove->level.actor)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &unapprove->level.permission)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;  
+    return true;  
 }
 
-int reader_get_newaccount(EosReaderCTX *_ctx, EosioNewAccount *newaccount) 
+bool reader_get_newaccount(EosReaderCTX *_ctx, EosioNewAccount *newaccount) 
 {
     if (!reader_get_long(_ctx, &newaccount->creator)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_long(_ctx, &newaccount->new_name)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_authority(_ctx, &newaccount->owner)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_authority(_ctx, &newaccount->active)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_refund(EosReaderCTX *_ctx, EosioRefund *refund)
+bool reader_get_refund(EosReaderCTX *_ctx, EosioRefund *refund)
 {
     if (!reader_get_long(_ctx, &refund->owner)) {
-        return FAILED;
+        return false;
     }
-    return SUCCESS;
+    return true;
 }
 
-int reader_get_authority(EosReaderCTX *_ctx, EosAuthority *authority) 
+bool reader_get_authority(EosReaderCTX *_ctx, EosAuthority *authority) 
 {
     if (!reader_get_int(_ctx, &authority->threshold)) {
-        return FAILED;
+        return false;
     }
     if (!reader_get_variable_uint(_ctx, &authority->key_size)) {
-        return FAILED;
+        return false;
     }
     if (authority->key_size > 10) {
-        return FAILED;
+        return false;
     }
     for (uint8_t i = 0; i < authority->key_size; i ++) {
         if (!reader_get_variable_uint(_ctx, &authority->keys[i].pubkey.curve_param_type)) {
-            return FAILED;
+            return false;
         }
         if (!reader_get_bytes(_ctx, authority->keys[i].pubkey.pubkey, 33)) {
-            return FAILED;
+            return false;
         }
         if (!reader_get_short(_ctx, &authority->keys[i].weight)) {
-            return FAILED;
+            return false;
         }
     }
     if (!reader_get_variable_uint(_ctx, &authority->permission_size)) {
-        return FAILED;
+        return false;
     }
     if (authority->permission_size > 10) {
-        return FAILED;
+        return false;
     }
     for (uint8_t i = 0; i < authority->permission_size; i++) {
         if (!reader_get_long(_ctx, &authority->permissions[i].permission.actor)) {
-            return FAILED;
+            return false;
         }
         if (!reader_get_long(_ctx, &authority->permissions[i].permission.permission)) {
-            return FAILED;
+            return false;
         }
         if (!reader_get_short(_ctx, &authority->permissions[i].weight)) {
-            return FAILED;
+            return false;
         }
     }
     if (!reader_get_variable_uint(_ctx, &authority->wait_size)) {
-        return FAILED;
+        return false;
     }
     if (authority->wait_size > 10) {
-        return FAILED;
+        return false;
     }
     for (uint8_t i = 0; i < authority->wait_size; i++) {
         if (!reader_get_int(_ctx, &authority->waits[i].wait_sec)) {
-            return FAILED;
+            return false;
         }
         if (!reader_get_short(_ctx, &authority->waits[i].weight)) {
-            return FAILED;
+            return false;
         }
     }
-    return SUCCESS;
+    return true;
 }

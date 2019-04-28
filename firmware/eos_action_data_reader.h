@@ -11,38 +11,38 @@ void action_data_reader_init(EosReaderCTX *, uint8_t *, int);
 
 // eosio
 
-int reader_get_newaccount(EosReaderCTX *, EosioNewAccount *);
+bool reader_get_newaccount(EosReaderCTX *, EosioNewAccount *);
 
-int reader_get_buyram(EosReaderCTX *, EosioBuyram *);
+bool reader_get_buyram(EosReaderCTX *, EosioBuyram *);
 
-int reader_get_buyram_bytes(EosReaderCTX *, EosioBuyramBytes *);
+bool reader_get_buyram_bytes(EosReaderCTX *, EosioBuyramBytes *);
 
-int reader_get_sellram(EosReaderCTX *, EosioSellram *);
+bool reader_get_sellram(EosReaderCTX *, EosioSellram *);
 
-int reader_get_delegage(EosReaderCTX *, EosioDelegate *);
+bool reader_get_delegage(EosReaderCTX *, EosioDelegate *);
 
-int reader_get_undelegate(EosReaderCTX *, EosioUndelegate *);
+bool reader_get_undelegate(EosReaderCTX *, EosioUndelegate *);
 
-int reader_get_vote_producer(EosReaderCTX *, EosioVoteProducer *);
+bool reader_get_vote_producer(EosReaderCTX *, EosioVoteProducer *);
 
-int reader_get_refund(EosReaderCTX *, EosioRefund *);
+bool reader_get_refund(EosReaderCTX *, EosioRefund *);
 
 // eosio.token
 
-int reader_get_transfer(EosReaderCTX *, EosioTokenTransfer *);
+bool reader_get_transfer(EosReaderCTX *, EosioTokenTransfer *);
 
 // eosio.msig
 
-int reader_get_propose(EosReaderCTX *, EosioMsigPropose *);
+bool reader_get_propose(EosReaderCTX *, EosioMsigPropose *);
 
-int reader_get_approve(EosReaderCTX *, EosioMsigApprove *);
+bool reader_get_approve(EosReaderCTX *, EosioMsigApprove *);
 
-int reader_get_cancel(EosReaderCTX *, EosioMsigCancel *);
+bool reader_get_cancel(EosReaderCTX *, EosioMsigCancel *);
 
-int reader_get_exec(EosReaderCTX *, EosioMsigExec *);
+bool reader_get_exec(EosReaderCTX *, EosioMsigExec *);
 
-int reader_get_unapprove(EosReaderCTX *, EosioMsigUnapprove *);
+bool reader_get_unapprove(EosReaderCTX *, EosioMsigUnapprove *);
 
-int reader_get_authority(EosReaderCTX *, EosAuthority *);
+bool reader_get_authority(EosReaderCTX *, EosAuthority *);
 
 #endif
