@@ -11,7 +11,7 @@ https://bithd.com/
 
 This creates file `build/trezor-TAG.bin` and prints its fingerprint and size at the end of the build log.
 
-## How to build TREZOR bootloader?
+## How to build BITHD bootloader?
 
 1. <a href="https://docs.docker.com/engine/installation/">Install Docker</a>
 2. `git clone https://github.com/bithd/bithd-mcu.git`
