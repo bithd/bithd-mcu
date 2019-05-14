@@ -22,6 +22,7 @@
 #include <libopencm3/stm32/flash.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "buttons.h"
 #include "bootloader.h"
@@ -45,7 +46,7 @@ extern unsigned char needsuccessack_flag;
 #define ENDPOINT_ADDRESS_IN         (0x81)
 #define ENDPOINT_ADDRESS_OUT        (0x01)
 
-static bool brand_new_firmware;
+static bool brand_new_firmware = 0;
 
 static const struct usb_device_descriptor dev_descr = {
 	.bLength = USB_DT_DEVICE_SIZE,

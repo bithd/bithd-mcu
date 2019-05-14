@@ -535,10 +535,10 @@ void displaytimer(void)
 {
     unsigned char xy=0;
     unsigned char i;
-    unsigned short year;
+    //unsigned short year;
 
     Keylogodispone_flag=0;//clear flag
-    if(Timerdisplaybuf.Year!=0)
+    if(1)//(Timerdisplaybuf.Year!=0)
     {
 	    oledClear();
 
@@ -566,6 +566,10 @@ void displaytimer(void)
 	        oledDrawBitmap(xy, 0,&bitpieblueconect);
 	    }
 
+         //TEXT
+        oledDrawBitmap(0, 16,&bmp_logomain);
+        
+#if 0
         xy=24;
 	    oledDrawBitmap(xy, 16,BitpieDigits1632[Timerdisplaybuf.hours/10]);
 	    xy=xy+16;
@@ -606,8 +610,8 @@ void displaytimer(void)
         xy=xy+8;
         oledDrawBitmap(xy,48,BitpieDigits816[Timerdisplaybuf.Day/10]);
         xy=xy+8;
-        oledDrawBitmap(xy,48,BitpieDigits816[Timerdisplaybuf.Day%10]);
-	
+        oledDrawBitmap(xy,48,BitpieDigits816[Timerdisplaybuf.Day%10]);        
+#endif        
         oledRefresh();
     }
 }

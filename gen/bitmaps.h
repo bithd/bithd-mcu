@@ -147,6 +147,7 @@ extern const BITMAP bmp_logo48;
 extern const BITMAP bmp_logo48_empty;
 extern const BITMAP bmp_logo64;
 extern const BITMAP bmp_logo64_empty;
+extern const BITMAP bmp_logomain;
 extern const BITMAP bmp_u2f_bitbucket;
 extern const BITMAP bmp_u2f_bitfinex;
 extern const BITMAP bmp_u2f_dropbox;

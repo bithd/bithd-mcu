@@ -83,7 +83,7 @@ void buttonUpdate()
 	}
 
 	if ((state & BTN_PIN_NO) == 0) {	// No button is down
-		if ((last_state & BTN_PIN_NO) == 0) {		// last No was down
+		if ((last_state & BTN_PIN_NO) != 0) {		// last No was down
 			if (button.NoDown < 2000000000) button.NoDown++;
 			button.NoUp = false;
 		} else {					// last No was up
@@ -91,7 +91,7 @@ void buttonUpdate()
 			button.NoUp = false;
 		}
 	} else {				// No button is up
-		if ((last_state & BTN_PIN_NO) == 0) {		// last No was down
+		if ((last_state & BTN_PIN_NO) != 0) {		// last No was down
 			button.NoDown = 0;
 			button.NoUp = true;
 		} else {					// last No was up

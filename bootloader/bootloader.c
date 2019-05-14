@@ -36,7 +36,6 @@
 #include "../timerbitpie.h"
 #include "./uart.h"
 
-#define PROTECTED 0
 
 void layoutFirmwareHash(const uint8_t *hash)
 {
@@ -144,24 +143,21 @@ int main(void)
 #endif
 	__stack_chk_guard = random32(); // this supports compiler provided unpredictable stack protection checks
 #ifndef APPVER
-#if PROTECTED
 	memory_protect();
-#endif
 	oledInit();
 #endif
 ///////////////////////////////////////////
 
-	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, BitBTN_PIN_YES);
-	gpio_mode_setup(GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO5);
+	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO15);
     timer_init();
 
 
 /////////////////////////////////////////////////
-    uint16_t state= gpio_port_read(BitBTN_PORT);
+    uint16_t state;
 
     delay(100000);
-    state = gpio_port_read(GPIOB);
- 	if ((state & GPIO5) == GPIO5)
+    state = gpio_port_read(GPIOA);
+ 	if((state & GPIO15) == GPIO15)
     {
 		usart_setup();    //uart init 115200
 		if (!signatures_ok(NULL)) 
@@ -179,14 +175,13 @@ int main(void)
 	}
 	else
 	{
-		state = gpio_port_read(BitBTN_PORT);
+		state = gpio_port_read(GPIOA);
 		oledClear();
 		oledDrawBitmap(40, 8,&bmp_logo64);
 		oledRefresh();
 		
-		if ((state & BitBTN_PIN_YES) == BitBTN_PIN_YES)
+		if ((state & GPIO2) == GPIO2)
 		{
-#if PROTECTED
 			if (firmware_present()) 
 			{
 				if (!signatures_ok(NULL)) 
@@ -200,12 +195,9 @@ int main(void)
 				}
 				else
 				{
-#endif
 					load_app();
-#if PROTECTED
 				}	
 			}
-#endif
 		}
 		usart_setup();    //uart init 115200
 		bootloader_loop();
