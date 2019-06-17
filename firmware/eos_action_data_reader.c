@@ -246,6 +246,22 @@ bool reader_get_refund(EosReaderCTX *_ctx, EosioRefund *refund)
     return true;
 }
 
+bool reader_get_updateauth(EosReaderCTX *_ctx, EosioUpdateAuth *updateauth) {
+    if (!reader_get_long(_ctx, &updateauth->account)) {
+        return false;
+    }
+    if (!reader_get_long(_ctx, &updateauth->permission)) {
+        return false;
+    }
+    if (!reader_get_long(_ctx, &updateauth->parent)) {
+        return false;
+    }
+    if (!reader_get_authority(_ctx, &updateauth->authority)) {
+        return false;
+    }
+    return true;
+}
+
 bool reader_get_authority(EosReaderCTX *_ctx, EosAuthority *authority) 
 {
     if (!reader_get_int(_ctx, &authority->threshold)) {
