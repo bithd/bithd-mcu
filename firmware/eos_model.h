@@ -15,6 +15,7 @@
 #define ACTION_SELL_RAM		    0xc2a31b9a40000000
 #define ACTION_BUY_RAM_BYTES    0x3ebd7348fecab000
 #define ACTION_REFUND           0xba97a9a400000000
+#define ACTION_UPDATEAUTH       0xd5526ca8dacb4000
 
 #define EOSIO_TOKEN             0x5530ea033482a600
 #define ACTION_TRANSMFER 	    0xcdcd3c2d57000000
@@ -157,6 +158,14 @@ typedef struct eosio_refund
 {
     EosAccountName owner;
 } EosioRefund;
+
+typedef struct eosio_updateauth
+{
+    EosAccountName account;
+    EosPermissionName permission;
+    EosPermissionName parent;
+    EosAuthority authority;
+} EosioUpdateAuth;
 
 // eosio.token
 

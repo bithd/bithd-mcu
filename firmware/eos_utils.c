@@ -102,5 +102,9 @@ uint8_t format_eos_pubkey(uint8_t *pubkey, uint8_t len, int no, char *out)
 	char b58addy[60];
 	size_t b58sz = 60;
 	b58enc(b58addy, &b58sz, addy, len + 4);
-	return sprintf(out, "#%02d: EOS%s", no, b58addy);
+	if (no >=0) {
+		return sprintf(out, "#%02d: EOS%s", no, b58addy);
+	} else {
+		return sprintf(out, "EOS%s", b58addy);
+	}	
 }

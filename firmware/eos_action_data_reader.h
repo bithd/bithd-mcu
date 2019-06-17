@@ -27,6 +27,8 @@ bool reader_get_vote_producer(EosReaderCTX *, EosioVoteProducer *);
 
 bool reader_get_refund(EosReaderCTX *, EosioRefund *);
 
+bool reader_get_updateauth(EosReaderCTX *, EosioUpdateAuth *);
+
 // eosio.token
 
 bool reader_get_transfer(EosReaderCTX *, EosioTokenTransfer *);

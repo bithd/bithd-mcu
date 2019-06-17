@@ -998,6 +998,58 @@ bool confirm_eosio_msig_exec(EosReaderCTX *ctx)
 	return protectButton(ButtonRequestType_ButtonRequest_SignTx, false);
 }
 
+bool confirm_eosio_updateauth(EosReaderCTX *ctx) {
+	EosioUpdateAuth updateauth;
+	if (!reader_get_updateauth(ctx, &updateauth)) {
+		return false;
+	}
+
+	char _confirm_updateaut[] = "Confirm Update Auth";
+	char _account_desc[] = "account:";
+	char _account[21];
+	char _permission_desc[] = "permission:";
+	char _permission[21];
+
+	memset(_account, 0, 21);
+	memset(_permission, 0, 21);
+
+	name_to_str(updateauth.account, _account);
+	name_to_str(updateauth.permission, _permission);
+
+	layoutDialogSwipe(
+		&bmp_icon_question,
+		_cancel, _confirm, NULL,
+		_confirm_updateaut, _account_desc, _account, _permission_desc, _permission, NULL
+	);
+
+	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
+		return false;
+	}
+	char _really_updateauth[] = "Really Update Auth";
+	char _public_key_desc[] = "EOS public key:";
+
+	char pubkey[61];
+	format_eos_pubkey(updateauth.authority.keys[0].pubkey.pubkey, 33, -1, pubkey);
+	char _pubkey1[21];
+	char _pubkey2[21];
+	char _pubkey3[21];
+	memset(_pubkey1, 0, 21);
+	memset(_pubkey2, 0, 21);
+	memset(_pubkey3, 0, 21);
+
+	memcpy(_pubkey1, pubkey, 20);
+	memcpy(_pubkey2, pubkey + 20, 20);
+	memcpy(_pubkey3, pubkey + 40, 20);
+
+	layoutDialogSwipe(
+		&bmp_icon_question,
+		_cancel, _confirm, NULL,
+		_really_updateauth, _public_key_desc, _pubkey1, _pubkey2, _pubkey3, NULL
+	);	
+
+	return protectButton(ButtonRequestType_ButtonRequest_SignTx, false);	
+}
+
 bool confirm_action(EosReaderCTX *ctx)
 {
 	EosAction action;
@@ -1023,6 +1075,8 @@ bool confirm_action(EosReaderCTX *ctx)
 				return confirm_eosio_vote_producer(ctx); 
 			case ACTION_REFUND:
 				return confirm_eosio_refund(ctx);
+			case ACTION_UPDATEAUTH:
+				return confirm_eosio_updateauth(ctx);
 			default:
 				break;
 		}
