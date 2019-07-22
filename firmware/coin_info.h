@@ -5,7 +5,7 @@
 
 #include "coins.h"
 
-#define COINS_COUNT (25)
+#define COINS_COUNT (26)
 
 extern const CoinInfo coins[COINS_COUNT];
 
