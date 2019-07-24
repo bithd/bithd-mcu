@@ -790,10 +790,14 @@ static void signing_hash_zip143(const TxInputType *txinput, uint8_t *hash) {
 	hasher_Final(&hasher_preimage, hash);
 }
 
-static void signing_hash_zip243(const TxInputType *txinput, uint8_t *hash) {
+static void signing_hash_zip243(const TxInputType *txinput, uint8_t *hash, const char *coin_name) {
 	uint32_t hash_type = signing_hash_type();
-	Hasher hasher_preimage;
-	hasher_Init(&hasher_preimage, HASHER_SAPLING_PREIMAGE);
+	Hasher hasher_preimage;	
+	if (strcmp(coin_name, "Ycash") == 0) {
+		hasher_Init(&hasher_preimage, HASHER_YCASH_BLAKE2B_PERSONAL);
+	} else {
+		hasher_Init(&hasher_preimage, HASHER_SAPLING_PREIMAGE);
+	}
 	uint32_t ver = version | TX_OVERWINTERED;													// 1. nVersion | fOverwintered
 	hasher_Update(&hasher_preimage, (const uint8_t *)&ver, 4);
 	hasher_Update(&hasher_preimage, (const uint8_t *)&version_group_id, 4);						// 2. nVersionGroupId
@@ -1273,7 +1277,7 @@ void signing_txack(TransactionType *tx)
 							signing_hash_zip143(&tx->inputs[0], hash);
 							break;
 						case 4:
-							signing_hash_zip243(&tx->inputs[0], hash);
+							signing_hash_zip243(&tx->inputs[0], hash, coin->coin_name);
 							break;
 						default:
 							fsm_sendFailure(FailureType_Failure_DataError, _("Unsupported version for overwintered transaction"));
