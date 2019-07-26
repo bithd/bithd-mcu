@@ -254,10 +254,21 @@ int compile_output(const CoinInfo *coin, const HDNode *root, TxOutputType *in, T
 
 	addr_raw_len = base58_decode_check(in->address, coin->curve->hasher_base58, addr_raw, MAX_ADDR_RAW_SIZE);
 	size_t prefix_len;
+	uint8_t LTC_flag;
+	char name[8],addr[2];
+	memcpy(addr,in->address,1);
+	memcpy(name,coin->coin_name,8);
+	if((memcmp(name,"Litecoin",8)==0)&&((addr[0] == '3')||(addr[0] == 'M')))
+	{
+		LTC_flag = true;
+	}else
+	{
+		LTC_flag = address_check_prefix(addr_raw, coin->address_type_p2sh);
+	}
+
 	if (coin->has_address_type                                  // p2pkh
 		&& address_check_prefix(addr_raw, coin->address_type)
-		&& addr_raw_len == 20 + (prefix_len = address_prefix_bytes_len(coin->address_type))
-		&& address_check_prefix(addr_raw, coin->address_type)) {
+		&& addr_raw_len == 20 + (prefix_len = address_prefix_bytes_len(coin->address_type))) {
 		out->script_pubkey.bytes[0] = 0x76; // OP_DUP
 		out->script_pubkey.bytes[1] = 0xA9; // OP_HASH_160
 		out->script_pubkey.bytes[2] = 0x14; // pushing 20 bytes
@@ -266,7 +277,7 @@ int compile_output(const CoinInfo *coin, const HDNode *root, TxOutputType *in, T
 		out->script_pubkey.bytes[24] = 0xAC; // OP_CHECKSIG
 		out->script_pubkey.size = 25;
 	} else if (coin->has_address_type_p2sh                      // p2sh
-			   && address_check_prefix(addr_raw, coin->address_type_p2sh)
+			   && LTC_flag
 			   && addr_raw_len == 20 + (prefix_len = address_prefix_bytes_len(coin->address_type_p2sh))) {
 		out->script_pubkey.bytes[0] = 0xA9; // OP_HASH_160
 		out->script_pubkey.bytes[1] = 0x14; // pushing 20 bytes
