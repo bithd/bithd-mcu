@@ -131,7 +131,7 @@ void bluenamedisplay(unsigned char* buf)
         oledDrawBitmap(xy,48,BitpieDigits715[(buf[i]&0x0f)]);
         xy=xy+8;
     }
-
+    oledFrame(0,0,127,63);
 	oledRefresh();
 
 }
