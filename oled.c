@@ -55,6 +55,10 @@
 #define OLED_RST_PORT			GPIOB
 #define OLED_RST_PIN			GPIO1	// PB1 | Reset display
 
+#define OLED_BUFSET(X,Y)		_oledbuffer[OLED_BUFSIZE - 1 - (X) - ((Y)/8)*OLED_WIDTH] |= (1 << (7 - (Y)%8))
+#define OLED_BUFCLR(X,Y)		_oledbuffer[OLED_BUFSIZE - 1 - (X) - ((Y)/8)*OLED_WIDTH] &= ~(1 << (7 - (Y)%8))
+#define OLED_BUFTGL(X,Y)		_oledbuffer[OLED_BUFSIZE - 1 - (X) - ((Y)/8)*OLED_WIDTH] ^= (1 << (7 - (Y)%8))
+
 /* TREZOR has a display of size OLED_WIDTH x OLED_HEIGHT (128x64).
  * The contents of this display are buffered in _oledbuffer.  This is
  * an array of OLED_WIDTH * OLED_HEIGHT/8 bytes.  At byte y*OLED_WIDTH + x
@@ -322,6 +326,105 @@ void oledDrawBitmap(int x, int y, const BITMAP *bmp)
 	}
 }
 
+int oledFindZhFont(uint8_t fbit, uint8_t sbit, uint8_t tbit)
+{
+	int pos;
+	int size;
+	size = ChineseMaskSize();
+	for(pos = 0; pos < size ; pos++){
+		if((zh_font[pos].index[0] == fbit) && (zh_font[pos].index[1] == sbit) && zh_font[pos].index[2] == tbit)
+			return pos;
+	}
+
+	return -1;
+}
+
+
+void oledDrawZh(int x, int y, const char *text)
+{
+	uint8_t bit1, bit2, bit3;
+	int mask;
+	int offset = 0;
+
+	if (!text) return;
+	while(*text)
+	{
+		bit1 = *text++;
+		bit2 = *text++;
+		bit3 = *text++;
+		mask = oledFindZhFont(bit1, bit2, bit3);
+		if(mask < 0 ) return;
+
+		if((bit1 =='#') && (bit3 == '#')){
+			oledDrawZhAscii(x + offset, y, mask);
+			offset += ZHASCII_WIDTH;
+		} else {
+			oledDrawZhFont(x + offset, y, mask);
+			offset += ZHFONT_WIDTH;
+		}
+	}
+}
+
+void oledDrawZhAscii(int x, int y, int mask)
+{
+	int i, j;
+
+	for (i = 0; i < min(ZHASCII_WIDTH, OLED_WIDTH - x); i++) {
+		for (j = 0; j < min(ZHFONT_HEIGHT, OLED_HEIGHT - y); j++) {
+			if(zh_font[mask].font12[(i / 8) + j] & (1 << (7 -i % 8))){
+				OLED_BUFSET(x + i, y + j);
+			} else {
+				OLED_BUFCLR(x + i, y + j);
+			}
+		}
+	}
+}
+
+void oledDrawZhFont(int x, int y, int mask)
+{
+	int i, j, offset;
+	if(ZHFONT_WIDTH % 16)
+		offset = ((ZHFONT_WIDTH/16) + 1) * 16;
+	else
+		offset = ZHFONT_WIDTH;
+
+	for (i = 0; i < min(ZHFONT_WIDTH, OLED_WIDTH - x); i++) {
+		for (j = 0; j < min(ZHFONT_HEIGHT, OLED_HEIGHT - y); j++) {
+			if(zh_font[mask].font12[(i / 8) + j * offset / 8] & (1 << (7 -i % 8))){
+				OLED_BUFSET(x + i, y + j);
+			} else {
+				OLED_BUFCLR(x + i, y + j);
+			}
+		}
+	}
+}
+
+void oledDrawZhCenter(int y, const char* text)
+{
+	int fontwidth = 0;
+	int x;
+	const char *widthtext;
+	if(!text) return;
+
+	widthtext = text;
+	while(*widthtext)
+	{
+		if(*widthtext > 128)
+		{
+			widthtext++;
+			widthtext++;
+			widthtext++;
+			fontwidth += 12; 
+		} else {
+			widthtext++;
+			widthtext++;
+			widthtext++;
+			fontwidth += 8; 
+		}
+	}
+	x = (OLED_WIDTH - fontwidth)/2;
+	oledDrawZh(x, y, text);
+}
 /*
  * Inverts box between (x1,y1) and (x2,y2) inclusive.
  */

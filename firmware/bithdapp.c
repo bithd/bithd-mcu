@@ -140,14 +140,25 @@ void shutdowndisplay(void)
 {    const char *action;
 
     oledClear();
-    action = _("Power off?");
-    oledDrawString(38, 24, action);
-    action = _("Cancel");
-    oledDrawString(94,1, action);
-	oledInvert(93, 0,128,8);
-    action = _("Ok");
-    oledDrawString(115,55,action);
-	oledInvert(114,54,128,64);
+    switch (storage_getLang()) {
+        case CHINESE : 
+            oledDrawZh(42,24,"关机#?#");
+            oledDrawZh(104,0,"取消");
+            oledInvert(104, 0,128,12);
+            oledDrawZh(104,52,"确认");
+            oledInvert(104,52,128,64);
+            break;
+        default:
+            action = _("Power off?");
+            oledDrawString(38, 24, action);
+            action = _("Cancel");
+            oledDrawString(94,1, action);
+            oledInvert(93, 0,128,8);
+            action = _("Ok");
+            oledDrawString(115,55,action);
+            oledInvert(114,54,128,64);
+            break;
+    }    
     oledRefresh();
 }
 
@@ -299,7 +310,7 @@ void Display_name(unsigned char *name,unsigned char x_star,unsigned char y_star)
 				X=X+8;
 			}
 		}
-		oledDrawBitmap(X,y_star, &bitpie1616Asciimaohao);
+		//oledDrawBitmap(X,y_star, &bitpie1616Asciimaohao);
 	}
 }
 
@@ -458,24 +469,40 @@ void Display_balance(unsigned char* balance,unsigned char Y)
 
 void balancedispaly(void)
 {
-    unsigned char xy=0;
+    unsigned char xy;
     unsigned char Balance[]="Balance";
-    unsigned char Datebuf[]="Date";
-    unsigned char Timebuf[]="Time";
+   // unsigned char Datebuf[]="Date";
+    //unsigned char Timebuf[]="Time";
     unsigned char No[]="No";
-    unsigned short Year;
+   // unsigned short Year;
 
     Keylogodispone_flag=0;//clear flag
     if(JudgeBalance())
     {
         oledClear();
-        display_str_oled(0,0,Balance,sizeof(Balance)-1);
-        xy=sizeof(Balance)*8;
-        Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,0);
-        oledDrawBitmap(xy-8,0, &bitpie8_16_clear);
-        Display_balance((unsigned char*)(&(Balancedisplaybuf.balance)),16);
-        display_str_oled(0,32,Datebuf,sizeof(Datebuf)-1);
-
+        
+        switch (storage_getLang()) {
+		    case CHINESE : 
+                xy = 38;
+                Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);
+                xy += 24;
+                oledDrawZh(xy,18,"余额#:#");
+                break;
+            default:
+                xy = 16;
+                display_str_oled(xy,16,Balance,sizeof(Balance)-1);
+                xy += 60;
+                Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);
+                //xy=sizeof(Balance)*8;               
+                //oledDrawBitmap(xy-8,0, &bitpie8_16_clear);
+                xy += 24; 
+                oledDrawBitmap(xy,16, &bitpie1616Asciimaohao);
+                break;
+        }        
+        
+        Display_balance((unsigned char*)(&(Balancedisplaybuf.balance)),32);
+        //display_str_oled(0,32,Datebuf,sizeof(Datebuf)-1);
+#if 0
         xy=128-80;
         Year=Balancedisplaybuf.Year[0];
         Year=(Year<<8)|Balancedisplaybuf.Year[1];
@@ -518,15 +545,22 @@ void balancedispaly(void)
         oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.second/10]);
         xy=xy+8;
         oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.second%10]);
-
+#endif
     }
     else
     {
         oledClear();
         xy=(128-10*8)/2;
-        display_str_oled(xy,24,No,sizeof(No)-1);
-        xy=xy+sizeof(No)*8;
-        display_str_oled(xy,24,Balance,sizeof(Balance)-1);
+        switch (storage_getLang()) {
+		    case CHINESE : 
+                oledDrawZh(42,24,"暂无余额");
+                break;
+            default:
+                display_str_oled(xy,24,No,sizeof(No)-1);
+                xy=xy+sizeof(No)*8;
+                display_str_oled(xy,24,Balance,sizeof(Balance)-1);
+                break;
+        }       
     }
     oledRefresh();
 }

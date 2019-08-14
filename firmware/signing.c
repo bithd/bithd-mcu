@@ -29,6 +29,7 @@
 #include "gettext.h"
 #include "memzero.h"
 #include "hasher.h"
+#include "storage.h"
 
 static uint32_t inputs_count;
 static uint32_t outputs_count;
@@ -537,8 +538,14 @@ void signing_init(const SignTx *msg, const CoinInfo *_coin, const HDNode *_root)
 		hasher_Init(&hasher_outputs, coin->curve->hasher_sign);
 		hasher_Init(&hasher_check, coin->curve->hasher_sign);
 	}
-
-	layoutProgressSwipe(_("Signing transaction"), 0);
+		switch (storage_getLang()) {
+			case CHINESE :
+				layoutProgressSwipe("交易签名#.##.##.#", 0);
+				break;
+			default :
+				layoutProgressSwipe("Signing transaction", 0);
+				break;
+		}
 
 	send_req_1_input();
 }
@@ -978,7 +985,14 @@ void signing_txack(TransactionType *tx)
 
 	static int update_ctr = 0;
 	if (update_ctr++ == 20) {
-		layoutProgress(_("Signing transaction"), progress);
+		switch (storage_getLang()) {
+			case CHINESE :
+				layoutProgressSwipe("交易签名#.##.##.#", progress);
+				break;
+			default :
+				layoutProgressSwipe("Signing transaction", progress);
+				break;
+		}
 		update_ctr = 0;
 	}
 
@@ -1234,7 +1248,14 @@ void signing_txack(TransactionType *tx)
 				// since this took a longer time, update progress
 				signatures++;
 				progress = 500 + ((signatures * progress_step) >> PROGRESS_PRECISION);
-				layoutProgress(_("Signing transaction"), progress);
+				switch (storage_getLang()) {
+					case CHINESE :
+						layoutProgressSwipe("交易签名#.##.##.#", progress);
+						break;
+					default :
+						layoutProgressSwipe("Signing transaction", progress);
+						break;
+				}
 				update_ctr = 0;
 				if (idx1 < inputs_count - 1) {
 					idx1++;
@@ -1292,7 +1313,14 @@ void signing_txack(TransactionType *tx)
 				// since this took a longer time, update progress
 				signatures++;
 				progress = 500 + ((signatures * progress_step) >> PROGRESS_PRECISION);
-				layoutProgress(_("Signing transaction"), progress);
+				switch (storage_getLang()) {
+						case CHINESE :
+							layoutProgressSwipe("交易签名#.##.##.#", progress);
+							break;
+						default :
+							layoutProgressSwipe("Signing transaction", progress);
+							break;
+					}
 				update_ctr = 0;
 			} else if (tx->inputs[0].script_type == InputScriptType_SPENDP2SHWITNESS
 					   && !tx->inputs[0].has_multisig) {
@@ -1361,7 +1389,14 @@ void signing_txack(TransactionType *tx)
 			}
 			signatures++;
 			progress = 500 + ((signatures * progress_step) >> PROGRESS_PRECISION);
-			layoutProgress(_("Signing transaction"), progress);
+			switch (storage_getLang()) {
+					case CHINESE :
+						layoutProgressSwipe("交易签名#.##.##.#", progress);
+						break;
+					default :
+						layoutProgressSwipe("Signing transaction", progress);
+						break;
+				}
 			update_ctr = 0;
 			if (idx1 < inputs_count - 1) {
 				idx1++;
@@ -1411,7 +1446,14 @@ void signing_txack(TransactionType *tx)
 			// since this took a longer time, update progress
 			signatures++;
 			progress = 500 + ((signatures * progress_step) >> PROGRESS_PRECISION);
-			layoutProgress(_("Signing transaction"), progress);
+			switch (storage_getLang()) {
+					case CHINESE :
+						layoutProgressSwipe("交易签名#.##.##.#", progress);
+						break;
+					default :
+						layoutProgressSwipe("Signing transaction", progress);
+						break;
+				}
 			update_ctr = 0;
 			if (idx1 < inputs_count - 1) {
 				idx1++;

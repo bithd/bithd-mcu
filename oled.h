@@ -25,6 +25,7 @@
 
 #include "bitmaps.h"
 #include "fonts.h"
+#include "chinese.h"
 
 #define OLED_WIDTH   128
 #define OLED_HEIGHT  64
@@ -49,6 +50,12 @@ void oledDrawStringSize(int x, int y, const char* text, int size);
 void oledDrawStringCenter(int y, const char* text);
 void oledDrawStringRight(int x, int y, const char* text);
 void oledDrawBitmap(int x, int y, const BITMAP *bmp);
+int oledFindZhFont(uint8_t fbit, uint8_t sbit, uint8_t tbit);
+void oledDrawZh(int x, int y, const char *text);
+void oledDrawZhAscii(int x, int y, int mask);
+void oledDrawZhFont(int x, int y, int mask);
+void oledDrawZhCenter(int y, const char* text);
+
 void oledInvert(int x1, int y1, int x2, int y2);
 void oledBox(int x1, int y1, int x2, int y2, bool set);
 void oledHLine(int y);
