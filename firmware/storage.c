@@ -445,13 +445,10 @@ bool storage_getRootNode(HDNode *node, const char *curve, bool usePassphrase)
 
 int storage_getLang(void)
 {
-	return CHINESE;
-	#if 0
 	if((strcmp(storage_getLanguage(), "chinese") == 0) || (strcmp(storage_getLanguage(), "zh") == 0))
 		return CHINESE;
 	else
 		return ENGLISH;
-	#endif	
 }
 const char *storage_getLabel(void)
 {
