@@ -470,6 +470,8 @@ void Display_balance(unsigned char* balance,unsigned char Y)
 void balancedispaly(void)
 {
     unsigned char xy;
+    unsigned char namelength;
+    unsigned char i;
     unsigned char Balance[]="Balance";
    // unsigned char Datebuf[]="Date";
     //unsigned char Timebuf[]="Time";
@@ -480,12 +482,18 @@ void balancedispaly(void)
     if(JudgeBalance())
     {
         oledClear();
-        
+        for(i=31;i>0;i--)                                              //计算name字符串个数
+        {
+            if(Balancedisplaybuf.coin_name[i]!=0)
+            {break;}
+        }
+        namelength=i+1;
+
         switch (storage_getLang()) {
 		    case CHINESE : 
-                xy = 38;
-                Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);
-                xy += 24;
+                xy = 38;                    
+                Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);                
+                xy += namelength*8;
                 oledDrawZh(xy,18,"余额#:#");
                 break;
             default:
@@ -495,7 +503,7 @@ void balancedispaly(void)
                 Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);
                 //xy=sizeof(Balance)*8;               
                 //oledDrawBitmap(xy-8,0, &bitpie8_16_clear);
-                xy += 24; 
+                xy += namelength*8; 
                 oledDrawBitmap(xy,16, &bitpie1616Asciimaohao);
                 break;
         }        
