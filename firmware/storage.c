@@ -328,11 +328,11 @@ void storage_setLanguage(const char *lang)
 {
 	if (!lang) return;
 	// sanity check
-	if (strcmp(lang, "english") == 0) {
+	if (strcmp(lang, "English") == 0) {
 		storage.has_language = true;
 		strlcpy(storage.language, lang, sizeof(storage.language));
 	}
-	if ((strcmp(lang, "chinese") == 0) || (strcmp(lang, "zh") == 0)) {
+	if ((strcmp(lang, "Chinese") == 0) || (strcmp(lang, "ZH") == 0)) {
 		storage.has_language = true;
 		strlcpy(storage.language, lang, sizeof(storage.language));
 	}
@@ -445,7 +445,7 @@ bool storage_getRootNode(HDNode *node, const char *curve, bool usePassphrase)
 
 int storage_getLang(void)
 {
-	if((strcmp(storage_getLanguage(), "chinese") == 0) || (strcmp(storage_getLanguage(), "zh") == 0))
+	if((strcmp(storage_getLanguage(), "Chinese") == 0) || (strcmp(storage_getLanguage(), "ZH") == 0))
 		return CHINESE;
 	else
 		return ENGLISH;

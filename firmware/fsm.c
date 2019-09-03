@@ -278,7 +278,7 @@ void fsm_msgPing(Ping *msg)
 }
 bool fsm_getLang(ApplySettings *msg)
 {
-	if(!strcmp(msg->language, "zh") || !strcmp(msg->language, "chinese"))
+	if(!strcmp(msg->language, "ZH") || !strcmp(msg->language, "Chinese"))
 		return true;
 	else
 		return false;
@@ -1242,6 +1242,10 @@ void fsm_msgDecryptMessage(DecryptMessage *msg)
 void fsm_msgRecoveryDevice(RecoveryDevice *msg)
 {
 	const bool dry_run = msg->has_dry_run ? msg->dry_run : false;
+
+	if (msg->has_language) {
+		storage_setLanguage(msg->language);
+	}
 	if (dry_run) {
 		CHECK_PIN
 	} else {
