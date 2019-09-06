@@ -724,7 +724,7 @@ void fsm_msgApplySettings(ApplySettings *msg)
 	if (msg->has_homescreen) {
 		switch (storage_getLang()) {
 			case CHINESE :
-				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, NULL, "改变屏幕显示", NULL, NULL);
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, NULL, "改变屏幕显示#?#", NULL, NULL);
 				break;
 			default :
 				layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change the home"), _("screen?"), NULL, NULL, NULL);
@@ -991,7 +991,7 @@ void fsm_msgVerifyMessage(VerifyMessage *msg)
 	if (!coin) return;
 	switch (storage_getLang()) {
 		case CHINESE:
-			layoutProgressSwipe("验证#.##.##.#", 0);
+			layoutProgressSwipe("验证中#.##.##.#", 0);
 			break;
 		default :
 			layoutProgressSwipe(_("Verifying"), 0);

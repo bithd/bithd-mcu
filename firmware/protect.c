@@ -219,7 +219,6 @@ bool protectPin(bool use_cached)
 			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_Current, "Please enter current PIN:");
 			break;
 	}
-	//pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_Current, _("Please enter current PIN:"));
 	if (!pin) {
 		fsm_sendFailure(FailureType_Failure_PinCancelled, NULL);
 		return false;
@@ -252,7 +251,6 @@ bool protectChangePin(void)
 			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewFirst, "Please enter new PIN:");
 			break;
 	}
-	//pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewFirst, _("Please enter new PIN:"));
 	if (!pin) {
 		return false;
 	}
@@ -265,7 +263,6 @@ bool protectChangePin(void)
 			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewSecond, "Please re-enter new PIN:");
 			break;
 	}
-	//pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewSecond, _("Please re-enter new PIN:"));
 	if (!pin) {
 		return false;
 	}
@@ -291,13 +288,12 @@ bool protectPassphrase(void)
 
 	switch (storage_getLang()) {
 		case CHINESE :
-			layoutZhDialogSwipe(&bmp_icon_question, NULL, NULL, NULL, "请在电脑键盘上输入", NULL, "您的密码#.#", NULL);
+			layoutZhDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, "请在手机上输入", NULL, "您的密码#!#", NULL);
 			break;
 		default	:
-			layoutDialogSwipe(&bmp_icon_question, NULL, NULL, NULL, "Please enter your", "passphrase using", "the computer's", "keyboard.", NULL, NULL);
-			break;
+			layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, "Please enter", NULL,"your passphrase",NULL, "on your mobile phone!", NULL);
+			break;												
 	}
-	//layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, _("Please enter your"), _("passphrase using"), _("the phone's"), _("keyboard."), NULL, NULL);
 
 	bool result;
 	loopuart=1;
