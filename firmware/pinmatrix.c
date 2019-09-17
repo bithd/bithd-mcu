@@ -37,9 +37,12 @@ void pinmatrix_draw(const char *text)
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			// use (2 - j) instead of j to achieve 789456123 layout
-			int k = pinmatrix_perm[i + (2 - j) * 3] - '0';
-			if (text) {
+			int k = pinmatrix_perm[i + (2 - j) * 3] - '0';			
+			if (*text < 128) {
 				oledDrawStringCenter(0, text);
+			}
+			else {
+				oledDrawZhCenter(0, text);
 			}
 			oledDrawBitmap((OLED_WIDTH - 3 * w - 2 * pad) / 2 + i * (w + pad), OLED_HEIGHT - 3 * h - 2 * pad + j * (h + pad), bmp_digits[k]);
 		}

@@ -328,7 +328,11 @@ void storage_setLanguage(const char *lang)
 {
 	if (!lang) return;
 	// sanity check
-	if (strcmp(lang, "english") == 0) {
+	if (strcmp(lang, "English") == 0) {
+		storage.has_language = true;
+		strlcpy(storage.language, lang, sizeof(storage.language));
+	}
+	if ((strcmp(lang, "Chinese") == 0) || (strcmp(lang, "ZH") == 0)) {
 		storage.has_language = true;
 		strlcpy(storage.language, lang, sizeof(storage.language));
 	}
@@ -359,7 +363,15 @@ void storage_setHomescreen(const uint8_t *data, uint32_t size)
 void get_root_node_callback(uint32_t iter, uint32_t total)
 {
 	usbSleep(1);
-	layoutProgress(_("Waking up"), 1000 * iter / total);
+
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutProgress("唤醒中#.##.##.#", 1000 * iter / total);
+			break;
+		default :
+			layoutProgress("Waking up", 1000 * iter / total);
+			break;
+	}
 }
 
 const uint8_t *storage_getSeed(bool usePassphrase)
@@ -431,6 +443,13 @@ bool storage_getRootNode(HDNode *node, const char *curve, bool usePassphrase)
 	return hdnode_from_seed(seed, 64, curve, node);
 }
 
+int storage_getLang(void)
+{
+	if((strcmp(storage_getLanguage(), "Chinese") == 0) || (strcmp(storage_getLanguage(), "ZH") == 0))
+		return CHINESE;
+	else
+		return ENGLISH;
+}
 const char *storage_getLabel(void)
 {
 	return storage.has_label ? storage.label : 0;

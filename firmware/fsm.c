@@ -276,22 +276,49 @@ void fsm_msgPing(Ping *msg)
 	msg_write(MessageType_MessageType_Success, resp);
 	layoutHome();
 }
-
+bool fsm_getLang(ApplySettings *msg)
+{
+	if(!strcmp(msg->language, "ZH") || !strcmp(msg->language, "Chinese"))
+		return true;
+	else
+		return false;
+}
 void fsm_msgChangePin(ChangePin *msg)
 {
 	bool removal = msg->has_remove && msg->remove;
 	if (removal) {
 		if (storage_hasPin()) {
-			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("remove current PIN?"), NULL, NULL, NULL, NULL);
+			switch (storage_getLang()) {
+				case CHINESE : 
+					layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "是否移除#P##I##N#码#?#", NULL, NULL, NULL);
+					break;
+				default :
+					layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("remove current PIN?"), NULL, NULL, NULL, NULL);
+					break;
+			}			
 		} else {
 			fsm_sendSuccess(_("PIN removed"));
 			return;
 		}
 	} else {
 		if (storage_hasPin()) {
-			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change current PIN?"), NULL, NULL, NULL, NULL);
+			switch (storage_getLang()) {
+				case CHINESE : 
+					layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "是否重置#P##I##N#码#?#", NULL, NULL, NULL);
+					break;
+				default :
+					layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change current PIN?"), NULL, NULL, NULL, NULL);
+					break;
+			}			
 		} else {
-			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("set new PIN?"), NULL, NULL, NULL, NULL);
+			switch (storage_getLang()) {
+				case CHINESE : 
+					layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "是否设置新的#P##I##N#码#?#", NULL, NULL, NULL);
+					break;
+				default :
+					layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("set new PIN?"), NULL, NULL, NULL, NULL);
+					break;
+			}			
 		}
 	}
 	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
@@ -318,7 +345,14 @@ void fsm_msgChangePin(ChangePin *msg)
 void fsm_msgWipeDevice(WipeDevice *msg)
 {
 	(void)msg;
-	layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("wipe the device?"), NULL, _("All data will be lost."), NULL, NULL);
+	switch (storage_getLang()) {
+		case CHINESE : 
+			layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "是否擦除设备#?#", NULL, "您将丢失所有数据#!#", NULL);
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("wipe the device?"), NULL, _("All data will be lost."), NULL, NULL);
+			break;
+	}			
 	if (!protectButton(ButtonRequestType_ButtonRequest_WipeDevice, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		layoutHome();
@@ -334,7 +368,14 @@ void fsm_msgWipeDevice(WipeDevice *msg)
 void fsm_msgGetEntropy(GetEntropy *msg)
 {
 #if !DEBUG_RNG
-	layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("send entropy?"), NULL, NULL, NULL, NULL);
+		switch (storage_getLang()) {
+			case CHINESE : 
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "发送公钥#?#", NULL, NULL, NULL);
+				break;
+			default :
+				layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("send entropy?"), NULL, NULL, NULL, NULL);
+				break;
+		}	
 	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		layoutHome();
@@ -415,7 +456,14 @@ void fsm_msgLoadDevice(LoadDevice *msg)
 {
 	CHECK_NOT_INITIALIZED
 
-	layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("I take the risk"), NULL, _("Loading private seed"), _("is not recommended."), _("Continue only if you"), _("know what you are"), _("doing!"), NULL);
+	switch (storage_getLang()) {
+		case CHINESE : 
+			layoutZhDialogSwipe(&bmp_icon_question, "取消", "继续", NULL, "不推荐载入私钥#.#", NULL, "是否继续#!#", NULL);
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("I take the risk"), NULL, _("Loading private seed"), _("is not recommended."), _("Continue only if you"), _("know what you are"), _("doing!"), NULL);
+			break;
+	}	
 	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		layoutHome();
@@ -629,7 +677,14 @@ void fsm_msgApplySettings(ApplySettings *msg)
 	CHECK_PIN
 
 	if (msg->has_label) {
-		layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change name to"), msg->label, "?", NULL, NULL);
+		switch (storage_getLang()) {
+				case CHINESE : 
+					layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "修改设备名称为#:#",  msg->label, NULL, NULL);
+					break;
+				default :
+					layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change name to"), msg->label, "?", NULL, NULL);
+					break;
+			}					
 		if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 			fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 			layoutHome();
@@ -637,7 +692,14 @@ void fsm_msgApplySettings(ApplySettings *msg)
 		}
 	}
 	if (msg->has_language) {
-		layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change language to"), msg->language, "?", NULL, NULL);
+		switch (storage_getLang()) {
+			case CHINESE : 
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, "设置固件语言为#:#", NULL, fsm_getLang(msg) ? "中文" : "英语", NULL);
+				break;
+			default :
+				layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change language to"), msg->language, "?", NULL, NULL);
+				break;
+		}		
 		if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 			fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 			layoutHome();
@@ -645,7 +707,14 @@ void fsm_msgApplySettings(ApplySettings *msg)
 		}
 	}
 	if (msg->has_use_passphrase) {
-		layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), msg->use_passphrase ? _("enable passphrase") : _("disable passphrase"), _("encryption?"), NULL, NULL, NULL);
+		switch (storage_getLang()) {
+			case CHINESE :
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, NULL, msg->use_passphrase ? "开启密码" : "禁止密码", "加密#?#", NULL);
+				break;
+			default :
+				layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), msg->use_passphrase ? _("enable passphrase") : _("disable passphrase"), _("encryption?"), NULL, NULL, NULL);
+				break;
+		}		
 		if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 			fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 			layoutHome();
@@ -653,7 +722,14 @@ void fsm_msgApplySettings(ApplySettings *msg)
 		}
 	}
 	if (msg->has_homescreen) {
-		layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change the home"), _("screen?"), NULL, NULL, NULL);
+		switch (storage_getLang()) {
+			case CHINESE :
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", NULL, NULL, "改变屏幕显示", NULL, NULL);
+				break;
+			default :
+				layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"), NULL, _("Do you really want to"), _("change the home"), _("screen?"), NULL, NULL, NULL);
+				break;
+		}		
 		if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 			fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 			layoutHome();
@@ -881,7 +957,14 @@ void fsm_msgSignMessage(SignMessage *msg)
 	HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, msg->address_n, msg->address_n_count);
 	if (!node) return;
 
-	layoutProgressSwipe(_("Signing"), 0);
+	switch (storage_getLang()) {
+		case CHINESE:
+			layoutProgressSwipe("签名中#.##.##.#", 0);
+			break;
+		default :
+			layoutProgressSwipe(_("Signing"), 0);
+			break;
+	}	
 	if (cryptoMessageSign(coin, node, msg->script_type, msg->message.bytes, msg->message.size, resp->signature.bytes) == 0) {
 		resp->has_address = true;
 		hdnode_fill_public_key(node);
@@ -906,7 +989,14 @@ void fsm_msgVerifyMessage(VerifyMessage *msg)
 
 	const CoinInfo *coin = fsm_getCoin(msg->has_coin_name, msg->coin_name);
 	if (!coin) return;
-	layoutProgressSwipe(_("Verifying"), 0);
+	switch (storage_getLang()) {
+		case CHINESE:
+			layoutProgressSwipe("验证#.##.##.#", 0);
+			break;
+		default :
+			layoutProgressSwipe(_("Verifying"), 0);
+			break;
+	}
 	if (msg->signature.size == 65 && cryptoMessageVerify(coin, msg->message.bytes, msg->message.size, msg->address, msg->signature.bytes) == 0) {
 		layoutVerifyAddress(msg->address);
 		if (!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
@@ -967,7 +1057,14 @@ void fsm_msgSignIdentity(SignIdentity *msg)
 	bool sign_gpg = msg->identity.has_proto && (strcmp(msg->identity.proto, "gpg") == 0);
 
 	int result = 0;
-	layoutProgressSwipe(_("Signing"), 0);
+	switch (storage_getLang()) {
+		case CHINESE:
+			layoutProgressSwipe("签名中#.##.##.#", 0);
+			break;
+		default :
+			layoutProgressSwipe(_("Signing"), 0);
+			break;
+	}
 	if (sign_ssh) { // SSH does not sign visual challenge
 		result = sshMessageSign(node, msg->challenge_hidden.bytes, msg->challenge_hidden.size, resp->signature.bytes);
 	} else if (sign_gpg) { // GPG should sign a message digest
@@ -1145,6 +1242,10 @@ void fsm_msgDecryptMessage(DecryptMessage *msg)
 void fsm_msgRecoveryDevice(RecoveryDevice *msg)
 {
 	const bool dry_run = msg->has_dry_run ? msg->dry_run : false;
+
+	if (msg->has_language) {
+		storage_setLanguage(msg->language);
+	}
 	if (dry_run) {
 		CHECK_PIN
 	} else {

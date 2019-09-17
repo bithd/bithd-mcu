@@ -34,6 +34,7 @@
 #include "gettext.h"
 #include "ethereum_tokens.h"
 #include "eth_multisig_wallet.h"
+#include "storage.h"
 
 /* maximum supported chain id.  v must fit in an uint32_t. */
 #define MAX_CHAIN_ID 2147483630
@@ -163,7 +164,14 @@ static void send_request_chunk(void)
 	int progress = 1000 - (data_total > 1000000
 						   ? data_left / (data_total/800)
 						   : data_left * 800 / data_total);
-	layoutProgress(_("Signing"), progress);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutProgress("签名中#.##.##.#", progress);
+			break;
+		default :
+			layoutProgress(_("Signing"), progress);
+			break;
+	}
 	msg_tx_request.has_data_length = true;
 	msg_tx_request.data_length = data_left <= 1024 ? data_left : 1024;
 	msg_write(MessageType_MessageType_EthereumTxRequest, &msg_tx_request);
@@ -179,8 +187,15 @@ static void send_signature(void)
 {
 	uint8_t hash[32], sig[64];
 	uint8_t v;
-	layoutProgress(_("Signing"), 1000);
-
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 1000);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),1000);
+			break;
+	}
 	/* eip-155 replay protection */
 	if (chain_id != 0) {
 		/* hash v=chain_id, r=0, s=0 */
@@ -661,8 +676,15 @@ void ethereum_confirm_multisig_tx(EthereumSignConfirmMultisigTx *msg, const HDNo
 	// stage 1: calculate total rlp length
 	uint32_t rlp_length = 0;
 	
-	layoutProgress(_("Signing"), 0);
-
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 0);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),0);
+			break;
+	}
 	rlp_length += rlp_calculate_length(msg->nonce.size, msg->nonce.bytes[0]);
 	rlp_length += rlp_calculate_length(msg->gas_price.size, msg->gas_price.bytes[0]);
 	rlp_length += rlp_calculate_length(msg->gas_limit.size, msg->gas_limit.bytes[0]);
@@ -678,7 +700,15 @@ void ethereum_confirm_multisig_tx(EthereumSignConfirmMultisigTx *msg, const HDNo
 	// stage 2: story header fields:
 	hash_rlp_list_length(rlp_length);
 
-	layoutProgress(_("Signing"), 100);
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 100);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),100);
+			break;
+	}
 
 	hash_rlp_field(msg->nonce.bytes, msg->nonce.size);
 	hash_rlp_field(msg->gas_price.bytes, msg->gas_price.size);
@@ -754,8 +784,15 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 	// stage 1: calculate total rlp length
 	uint32_t rlp_length = 0;
 	
-	layoutProgress(_("Signing"), 0);
-
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 0);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),0);
+			break;
+	}
 	rlp_length += rlp_calculate_length(msg->nonce.size, msg->nonce.bytes[0]);
 	rlp_length += rlp_calculate_length(msg->gas_price.size, msg->gas_price.bytes[0]);
 	rlp_length += rlp_calculate_length(msg->gas_limit.size, msg->gas_limit.bytes[0]);
@@ -775,8 +812,15 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 	memset(abi_value, 0, 32);
 	memcpy(abi_value + 32 - (msg->value.size), msg->value.bytes, msg->value.size);
 
-	layoutProgress(_("Signing"), 100);
-
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 100);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),100);
+			break;
+	}
 	hash_rlp_field(msg->nonce.bytes, msg->nonce.size);
 	hash_rlp_field(msg->gas_price.bytes, msg->gas_price.size);
 	hash_rlp_field(msg->gas_limit.bytes, msg->gas_limit.size);
@@ -865,7 +909,15 @@ void ethereum_generate_multisig_signing_init(EthereumSignGenerateMultisigContrac
 	/* Stage 1: Calculate total RLP length */
 	// uint32_t rlp_length = 0;
 
-	layoutProgress(_("Signing"), 0);
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 0);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),0);
+			break;
+	}
 	uint32_t rlp_length = 0;
 	rlp_length += rlp_calculate_length(msg->nonce.size, msg->nonce.bytes[0]); // nonce
 	rlp_length += rlp_calculate_length(msg->gas_price.size, msg->gas_price.bytes[0]); // price
@@ -881,8 +933,15 @@ void ethereum_generate_multisig_signing_init(EthereumSignGenerateMultisigContrac
 
 	/* Stage 2: Store header fields */
 	hash_rlp_list_length(rlp_length);
-
-	layoutProgress(_("Signing"), 100);
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 100);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),100);
+			break;
+	}
 
 	hash_rlp_field(msg->nonce.bytes, msg->nonce.size);
 	hash_rlp_field(msg->gas_price.bytes, msg->gas_price.size);
@@ -1035,8 +1094,15 @@ void ethereum_signing_init(EthereumSignTx *msg, const HDNode *node)
 	
 	/* Stage 1: Calculate total RLP length */
 	uint32_t rlp_length = 0;
-
-	layoutProgress(_("Signing"), 0);
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 0);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),0);
+			break;
+	}
 
 	rlp_length += rlp_calculate_length(msg->nonce.size, msg->nonce.bytes[0]);
 	rlp_length += rlp_calculate_length(msg->gas_price.size, msg->gas_price.bytes[0]);
@@ -1053,7 +1119,15 @@ void ethereum_signing_init(EthereumSignTx *msg, const HDNode *node)
 	/* Stage 2: Store header fields */
 	hash_rlp_list_length(rlp_length);
 
-	layoutProgress(_("Signing"), 100);
+	switch (storage_getLang())
+	{
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 100);		
+			break;		
+		default:
+			layoutProgress(_("Signing"),100);
+			break;
+	}
 
 	hash_rlp_field(msg->nonce.bytes, msg->nonce.size);
 	hash_rlp_field(msg->gas_price.bytes, msg->gas_price.size);

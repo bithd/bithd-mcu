@@ -33,6 +33,7 @@
 #include "secp256k1.h"
 #include "nem2.h"
 #include "gettext.h"
+#include "layout.h"
 
 #define BITCOIN_DIVISIBILITY (8)
 
@@ -43,6 +44,13 @@ void layoutDialogSwipe(const BITMAP *icon, const char *btnNo, const char *btnYes
 	layoutLast = layoutDialogSwipe;
 	layoutSwipe();
 	layoutDialog(icon, btnNo, btnYes, desc, line1, line2, line3, line4, line5, line6);
+}
+
+void layoutZhDialogSwipe(const BITMAP *icon, const char *btnNo, const char *btnYes, const char *desc, const char *line1, const char *line2, const char *line3, const char *line4)
+{
+	layoutLast = layoutDialogSwipe;
+	layoutSwipe();
+	layoutZhDialog(icon, btnNo, btnYes, desc, line1, line2, line3, line4);
 }
 
 void layoutProgressSwipe(const char *desc, int permil)
@@ -193,13 +201,36 @@ void layoutFeeOverThreshold(const CoinInfo *coin, uint64_t fee)
 		NULL
 	);
 }
-
+const char statement[]={0xe6,0x88,0x91,0xe6,0x89,0xbf,0xe8,0xaf,0xba,0xef,
+						0xbc,0x9a,0xe6,0x9c,0xac,0xe4,0xba,0xba,0xe5,0xb7,
+						0xb2,0xe7,0x9f,0xa5,0xe6,0x99,0x93,0xe5,0xb9,0xb6,
+						0xe9,0x81,0xb5,0xe4,0xbb,0x8e,0xe6,0x9c,0xac,
+						0xe4,0xba,0xba,0xe6,0x89,0x80,0xe5,0x9c,0xa8,0xe5,
+						0x9c,0xb0,0xe7,0x9b,0xb8,0xe5,0x85,0xb3,0xe6,0xb3,
+						0x95,0xe5,0xbe,0x8b,0xe6,0xb3,0x95,0xe8,0xa7,0x84,
+						0xe3,0x80,0x82};
 void layoutSignMessage(const uint8_t *msg, uint32_t len)
 {
 	const char **str = split_message(msg, len, 16);
-	layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"),
-		_("Sign message?"),
-		str[0], str[1], str[2], str[3], NULL, NULL);
+
+		switch (storage_getLang()) {
+		case CHINESE :
+			if(memcmp(msg,statement,sizeof(statement))==0)
+			{				
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认","签名消息#?#", "我承诺#:#本人已知晓", "并遵从本人所在地相", "关法律法规#.#", NULL);
+			}else
+			{
+				layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认",
+					"签名消息#?#",
+					str[0], str[1], str[2], str[3]);
+			}
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_question, "Cancel", "Confirm",
+					"Sign message?",
+					str[0], str[1], str[2], str[3], NULL, NULL);
+			break;
+	}
 }
 
 void layoutVerifyAddress(const char *address)
@@ -214,33 +245,71 @@ void layoutVerifyAddress(const char *address)
 void layoutVerifyMessage(const uint8_t *msg, uint32_t len)
 {
 	const char **str = split_message(msg, len, 16);
-	layoutDialogSwipe(&bmp_icon_info, _("Cancel"), _("Confirm"),
-		_("Verified message"),
-		str[0], str[1], str[2], str[3], NULL, NULL);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutZhDialogSwipe(&bmp_icon_info, NULL, "确认", 
+					"验证消息",
+					str[0], str[1], str[2], str[3]);
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_info, _("Cancel"), _("Confirm"),
+				_("Verified message"),
+				str[0], str[1], str[2], str[3], NULL, NULL);
+			break;
+	}	
 }
 
 void layoutCipherKeyValue(bool encrypt, const char *key)
 {
 	const char **str = split_message((const uint8_t *)key, strlen(key), 16);
-	layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"),
-		encrypt ? _("Encode value of this key?") : _("Decode value of this key?"),
-		str[0], str[1], str[2], str[3], NULL, NULL);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认",
+				encrypt ? "编码键值#?#" : "解码键值#?#",
+				str[0], str[1], str[2], str[3]);
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"),
+				encrypt ? _("Encode value of this key?") : _("Decode value of this key?"),
+				str[0], str[1], str[2], str[3], NULL, NULL);
+			break;
+	}
+	
 }
 
 void layoutEncryptMessage(const uint8_t *msg, uint32_t len, bool signing)
 {
 	const char **str = split_message(msg, len, 16);
-	layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"),
-		signing ? _("Encrypt+Sign message?") : _("Encrypt message?"),
-		str[0], str[1], str[2], str[3], NULL, NULL);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutZhDialogSwipe(&bmp_icon_question, "取消", "确认", 
+				signing ? "加密签名消息#?#" : "加密消息#?#", 
+				str[0], str[1], str[2], str[3]);
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("Confirm"),
+				signing ? _("Encrypt+Sign message?") : _("Encrypt message?"),
+				str[0], str[1], str[2], str[3], NULL, NULL);
+			break;
+	}
+	
 }
 
 void layoutDecryptMessage(const uint8_t *msg, uint32_t len, const char *address)
 {
 	const char **str = split_message(msg, len, 16);
-	layoutDialogSwipe(&bmp_icon_info, NULL, _("OK"),
-		address ? _("Decrypted signed message") : _("Decrypted message"),
-		str[0], str[1], str[2], str[3], NULL, NULL);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutZhDialogSwipe(&bmp_icon_question, NULL, "确认", 
+				address ? "解密签名的消息" : "解密消息", 
+				str[0], str[1], str[2], str[3]);
+			break;
+		default :
+			layoutDialogSwipe(&bmp_icon_info, NULL, _("OK"),
+				address ? _("Decrypted signed message") : _("Decrypted message"),
+				str[0], str[1], str[2], str[3], NULL, NULL);
+			break;
+	}	
 }
 
 void layoutResetWord(const char *word, int pass, int word_pos, bool last)
@@ -251,50 +320,96 @@ void layoutResetWord(const char *word, int pass, int word_pos, bool last)
 	const char *btnYes;
 	if (last) {
 		if (pass == 1) {
-			btnYes = _("Finish");
+			if(storage_getLang() == CHINESE)
+			{
+				btnYes = _("完成");
+			}else
+			{
+				btnYes = _("Finish");
+			}				
 		} else {
-			btnYes = _("Again");
+			if(storage_getLang() == CHINESE)
+			{
+				btnYes = _("再一次");
+			}else
+			{
+				btnYes = _("Again");
+			}
 		}
 	} else {
-		btnYes = _("Next");
+		if(storage_getLang() == CHINESE)
+		{
+			btnYes = _("下一个");
+		}else
+		{
+			btnYes = _("Next");
+		}
 	}
 
 	const char *action;
 	if (pass == 1) {
-		action = _("Please check the seed");
+		if(storage_getLang() == CHINESE)
+		{
+			action = _("请检查");
+		}else
+		{
+			action = _("Please check the seed");
+		}
 	} else {
-		action = _("Write down the seed");
+		if(storage_getLang() == CHINESE)
+		{
+			action = _("请记录");
+		}else
+		{
+			action = _("Write down the seed");
+		}
 	}
 
 	char index_str[] = "##th word is:";
-	if (word_pos < 10) {
-		index_str[0] = ' ';
+	char zhunitdesc[] = "第# #个助记词";
+	char zhdesc[] = "第# ## #个助记词";
+	if(storage_getLang() == CHINESE) {
+		if (word_pos < 10) {
+			zhunitdesc[4] = '0' + word_pos % 10;
+		} else {
+			zhdesc[4] = '0' + word_pos / 10;
+			zhdesc[7] = '0' + word_pos % 10;	
+		}
 	} else {
-		index_str[0] = '0' + word_pos / 10;
+		if (word_pos < 10) {
+			index_str[0] = ' ';
+		} else {
+			index_str[0] = '0' + word_pos / 10;
+		}
+		index_str[1] = '0' + word_pos % 10;
+		if (word_pos == 1 || word_pos == 21) {
+			index_str[2] = 's'; index_str[3] = 't';
+		} else
+		if (word_pos == 2 || word_pos == 22) {
+			index_str[2] = 'n'; index_str[3] = 'd';
+		} else
+		if (word_pos == 3 || word_pos == 23) {
+			index_str[2] = 'r'; index_str[3] = 'd';
+		}
 	}
-	index_str[1] = '0' + word_pos % 10;
-	if (word_pos == 1 || word_pos == 21) {
-		index_str[2] = 's'; index_str[3] = 't';
-	} else
-	if (word_pos == 2 || word_pos == 22) {
-		index_str[2] = 'n'; index_str[3] = 'd';
-	} else
-	if (word_pos == 3 || word_pos == 23) {
-		index_str[2] = 'r'; index_str[3] = 'd';
+	if(storage_getLang() == CHINESE)
+	{
+		layoutZhDialogSwipe(&bmp_icon_info, NULL, btnYes, NULL, action, (word_pos < 10 ? zhunitdesc  : zhdesc), NULL, NULL);
+		oledDrawStringDouble(20, 3 * 9, word);
+	} else {		
+		int left = 0;
+		oledClear();
+		oledDrawBitmap(0, 0, &bmp_icon_info);
+		left = bmp_icon_info.width + 4;
+
+		oledDrawString(left, 0 * 9, action);
+		oledDrawString(left, 2 * 9, word_pos < 10 ? index_str + 1 : index_str);
+		oledDrawStringDouble(left, 3 * 9, word);
+		oledHLine(OLED_HEIGHT - 13);
+		oledDrawString(OLED_WIDTH - fontCharWidth('\x06') - 1, OLED_HEIGHT - 8, "\x06");
+		oledDrawString(OLED_WIDTH - oledStringWidth(btnYes) - fontCharWidth('\x06') - 3, OLED_HEIGHT - 8, btnYes);
+		oledInvert(OLED_WIDTH - oledStringWidth(btnYes) - fontCharWidth('\x06') - 4, OLED_HEIGHT - 9, OLED_WIDTH - 1, OLED_HEIGHT - 1);		
 	}
-
-	int left = 0;
-	oledClear();
-	oledDrawBitmap(0, 0, &bmp_icon_info);
-	left = bmp_icon_info.width + 4;
-
-	oledDrawString(left, 0 * 9, action);
-	oledDrawString(left, 2 * 9, word_pos < 10 ? index_str + 1 : index_str);
-	oledDrawStringDouble(left, 3 * 9, word);
-	oledHLine(OLED_HEIGHT - 13);
-	oledDrawString(OLED_WIDTH - fontCharWidth('\x06') - 1, OLED_HEIGHT - 8, "\x06");
-	oledDrawString(OLED_WIDTH - oledStringWidth(btnYes) - fontCharWidth('\x06') - 3, OLED_HEIGHT - 8, btnYes);
-	oledInvert(OLED_WIDTH - oledStringWidth(btnYes) - fontCharWidth('\x06') - 4, OLED_HEIGHT - 9, OLED_WIDTH - 1, OLED_HEIGHT - 1);
 	oledRefresh();
 }
 

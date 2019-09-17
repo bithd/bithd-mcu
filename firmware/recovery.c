@@ -156,17 +156,31 @@ static void recovery_done(void) {
 			bool match = (storage_isInitialized() && storage_containsMnemonic(new_mnemonic));
 			memset(new_mnemonic, 0, sizeof(new_mnemonic));
 			if (match) {
-				layoutDialog(&bmp_icon_ok, NULL, _("Confirm"), NULL,
-					_("The seed is valid"),
-					_("and MATCHES"),
-					_("the one in the device."), NULL, NULL, NULL);
-				protectButton(ButtonRequestType_ButtonRequest_Other, true);
-				fsm_sendSuccess(_("The seed is valid and matches the one in the device"));
+				switch (storage_getLang()) {
+				case CHINESE : 
+					layoutZhDialogSwipe(&bmp_icon_ok, NULL,  "确认", NULL, "助记词有效", "并且与该设备匹配#.#", NULL, NULL);
+					break;
+				default:
+					layoutDialog(&bmp_icon_ok, NULL, _("Confirm"), NULL,
+						_("The seed is valid"),
+						_("and MATCHES"),
+						_("the one in the device."), NULL, NULL, NULL);
+					break;
+				}
+					protectButton(ButtonRequestType_ButtonRequest_Other, true);
+					fsm_sendSuccess(_("The seed is valid and matches the one in the device"));
 			} else {
-				layoutDialog(&bmp_icon_error, NULL, _("Confirm"), NULL,
-					_("The seed is valid"),
-					_("but does NOT MATCH"),
-					_("the one in the device."), NULL, NULL, NULL);
+				switch (storage_getLang()) {
+				case CHINESE : 
+					layoutZhDialogSwipe(&bmp_icon_error, NULL,  "确认", NULL, "助记词有效", "但不与该设备匹配#!#", NULL, NULL);
+					break;
+				default:
+					layoutDialog(&bmp_icon_error, NULL, _("Confirm"), NULL,
+						_("The seed is valid"),
+						_("but does NOT MATCH"),
+						_("the one in the device."), NULL, NULL, NULL);
+						break;
+				}
 				protectButton(ButtonRequestType_ButtonRequest_Other, true);
 				fsm_sendFailure(FailureType_Failure_DataError,
 					_("The seed is valid but does not match the one in the device"));
@@ -178,8 +192,15 @@ static void recovery_done(void) {
 		if (!dry_run) {
 			storage_reset();
 		} else {
-			layoutDialog(&bmp_icon_error, NULL, _("Confirm"), NULL,
-				_("The seed is"), _("INVALID!"), NULL, NULL, NULL, NULL);
+			switch (storage_getLang()) {
+			case CHINESE : 
+				layoutZhDialogSwipe(&bmp_icon_error, NULL,  "确认", NULL, "输入的助记词", "无效#!#", NULL, NULL);
+				break;
+			default:
+				layoutDialog(&bmp_icon_error, NULL, _("Confirm"), NULL,
+					_("The seed is"), _("INVALID!"), NULL, NULL, NULL, NULL);
+				break;
+			}
 			protectButton(ButtonRequestType_ButtonRequest_Other, true);
 		}
 		fsm_sendFailure(FailureType_Failure_DataError, _("Invalid seed, are words in correct order?"));
@@ -396,12 +417,41 @@ void next_word(void) {
 	if (word_pos == 0) {
 		const char * const *wl = mnemonic_wordlist();
 		strlcpy(fake_word, wl[random_uniform(2048)], sizeof(fake_word));
-		layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, _("Please enter the word"), NULL, fake_word, NULL, _("on your mobile phone"), NULL);
+		switch (storage_getLang()) {
+			case CHINESE : 
+				layoutZhDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, "请在手机上输入", "下面单词", NULL, NULL);
+				oledDrawStringDouble(20, 3 * 9, fake_word);
+				oledRefresh();
+				break;
+			default :
+				layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, _("Please enter the word"), NULL, NULL, NULL, _("on your mobile phone"), NULL);
+				oledDrawStringDouble(20, 2 * 9, fake_word);
+				oledRefresh();
+				break;
+		}		
 	} else {
 		fake_word[0] = 0;
 		char desc[] = "##th word";
-		format_number(desc, word_pos);
-		layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, _("Please enter the"), NULL, (word_pos < 10 ? desc + 1 : desc), NULL, _("of your mnemonic"), NULL);
+		char zhunitdesc[] = "第# #个助记词";
+		char zhdesc[] = "第# ## #个助记词";
+		if(storage_getLang() == CHINESE) {
+			if (word_pos < 10) {
+				zhunitdesc[4] = '0' + word_pos % 10; 
+			} else {
+				zhdesc[4] = '0' + word_pos / 10; 
+				zhdesc[7] = '0' + word_pos % 10;    
+			}
+		}else {
+			format_number(desc, word_pos);
+		}
+		switch (storage_getLang()) {
+			case CHINESE : 
+				layoutZhDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, "请输入您备份的", NULL, (word_pos < 10 ? zhunitdesc : zhdesc), NULL);
+				break;
+			default :
+				layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, "Please enter the", NULL, (word_pos < 10 ? desc + 1 : desc), NULL, "of your mnemonic", NULL);
+				break;
+		}		
 	}
 	recovery_request();
 }

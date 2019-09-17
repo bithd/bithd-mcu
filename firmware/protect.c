@@ -189,7 +189,15 @@ bool protectPin(bool use_cached)
 		if (wait == 1) {
 			secstrbuf[16] = 0;
 		}
-		layoutDialog(&bmp_icon_info, NULL, NULL, NULL, _("Wrong PIN entered"), NULL, _("Please wait"), secstr, _("to continue ..."), NULL);
+		switch (storage_getLang()) {
+				case CHINESE :
+					layoutZhDialogSwipe(&bmp_icon_question, NULL, NULL, NULL, "输入#P##I##N#码错误", NULL, "请稍等#.##.##.#", NULL);
+					break;
+				default	:
+					layoutDialogSwipe(&bmp_icon_question, NULL, NULL, NULL, "Wrong PIN entered", NULL, "Please wait ...", NULL, NULL, NULL);
+					break;
+			}
+		//layoutDialog(&bmp_icon_info, NULL, NULL, NULL, _("Wrong PIN entered"), NULL, _("Please wait"), secstr, _("to continue ..."), NULL);
 		// wait one second
 		usbSleep(1000);
 		if (msg_tiny_id == MessageType_MessageType_Initialize) {
@@ -203,7 +211,15 @@ bool protectPin(bool use_cached)
 	}
 	usbTiny(0);
 	const char *pin;
-	pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_Current, _("Please enter current PIN:"));
+	switch (storage_getLang()) {
+		case CHINESE :
+			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_Current, "请输入当前#P##I##N#码#:#");
+			break;
+		default	:
+			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_Current, "Please enter current PIN:");
+			break;
+	}
+	//pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_Current, _("Please enter current PIN:"));
 	if (!pin) {
 		fsm_sendFailure(FailureType_Failure_PinCancelled, NULL);
 		return false;
@@ -227,12 +243,29 @@ bool protectChangePin(void)
 {
 	const char *pin;
 	char pin1[17], pin2[17];
-	pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewFirst, _("Please enter new PIN:"));
+
+	switch (storage_getLang()) {
+		case CHINESE :
+			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewFirst, "请输入新的#P##I##N#码#:#");
+			break;
+		default	:
+			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewFirst, "Please enter new PIN:");
+			break;
+	}
+	//pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewFirst, _("Please enter new PIN:"));
 	if (!pin) {
 		return false;
 	}
 	strlcpy(pin1, pin, sizeof(pin1));
-	pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewSecond, _("Please re-enter new PIN:"));
+	switch (storage_getLang()) {
+		case CHINESE :
+			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewSecond, "请再输入#P##I##N#码#:#");
+			break;
+		default	:
+			pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewSecond, "Please re-enter new PIN:");
+			break;
+	}
+	//pin = requestPin(PinMatrixRequestType_PinMatrixRequestType_NewSecond, _("Please re-enter new PIN:"));
 	if (!pin) {
 		return false;
 	}
@@ -256,7 +289,15 @@ bool protectPassphrase(void)
 	usbTiny(1);
 	msg_write(MessageType_MessageType_PassphraseRequest, &resp);
 
-	layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, _("Please enter your"), _("passphrase using"), _("the phone's"), _("keyboard."), NULL, NULL);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutZhDialogSwipe(&bmp_icon_question, NULL, NULL, NULL, "请在电脑键盘上输入", NULL, "您的密码#.#", NULL);
+			break;
+		default	:
+			layoutDialogSwipe(&bmp_icon_question, NULL, NULL, NULL, "Please enter your", "passphrase using", "the computer's", "keyboard.", NULL, NULL);
+			break;
+	}
+	//layoutDialogSwipe(&bmp_icon_info, NULL, NULL, NULL, _("Please enter your"), _("passphrase using"), _("the phone's"), _("keyboard."), NULL, NULL);
 
 	bool result;
 	loopuart=1;

@@ -40,6 +40,7 @@ bool storage_getRootNode(HDNode *node, const char *curve, bool usePassphrase);
 const char *storage_getLabel(void);
 void storage_setLabel(const char *label);
 
+int storage_getLang(void);
 const char *storage_getLanguage(void);
 void storage_setLanguage(const char *lang);
 
@@ -79,5 +80,10 @@ void storage_wipe_pinerr(void);
 extern Storage storage;
 
 extern char storage_uuid_str[25];
+
+enum {
+	CHINESE,
+	ENGLISH,
+};
 
 #endif

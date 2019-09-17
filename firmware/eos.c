@@ -15,6 +15,7 @@
 #include "eos_action_data_reader.h"
 #include "eos_utils.h"
 #include "eos_transaction_reader.h"
+#include "storage.h"
 
 static bool eos_signing = false;
 SHA256_CTX sha256_ctx;
@@ -89,9 +90,15 @@ static void send_signature(void)
 		eos_signing_abort();
 		return;
 	}
-
-	layoutProgress(_("Signing"), 1000);
-
+	switch (storage_getLang()) {
+		case CHINESE:
+			layoutProgress("签名中#.##.##.#", 1000);
+			break;
+		default :
+			layoutProgress(_("Signing"), 1000);
+			break;
+	}
+	
 	memset(privkey, 0, sizeof(privkey));
 
 	/* Send back the result */
@@ -1122,7 +1129,14 @@ void eos_signing_init(EOSSignTx *msg, const HDNode *node)
 	sha256_Init(&sha256_ctx);
 
 	//step1
-	layoutProgress(_("Signing"), 0);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutProgress("签名中#.##.##.#", 0);
+			break;
+		default :
+			layoutProgress(_("Signing"), 0);
+			break;
+	}	
 	hash_bytes(msg->chain_id.bytes, msg->chain_id.size); // chain_id.
 	hash_uint(msg->expiration, 4); // expiration
 	hash_uint(msg->ref_block_num, 2); // ref_block_num
@@ -1135,7 +1149,14 @@ void eos_signing_init(EOSSignTx *msg, const HDNode *node)
 	hash_zero(33);
 
 	//step2
-	layoutProgress(_("Signing"), 100);
+	switch (storage_getLang()) {
+		case CHINESE :
+			layoutProgress("签名中#.##.##.#", 100);
+			break;
+		default :
+			layoutProgress(_("Signing"), 100);
+			break;
+	}	
     memcpy(privkey, node->private_key, 32);
 
     send_signature();
