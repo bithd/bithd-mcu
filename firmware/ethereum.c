@@ -724,6 +724,7 @@ void ethereum_confirm_multisig_tx(EthereumSignConfirmMultisigTx *msg, const HDNo
 	send_signature();
 }
 
+#define MAX_MULTISIG_DATA_LEN 1024
 void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode *node) 
 {
 	ethereum_signing = true;
@@ -749,13 +750,27 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 		chain_id = 0;
 	}
 
-	if (msg->has_data_length && msg->data_length > 0) {
-		fsm_sendFailure(FailureType_Failure_DataError, _("Not support this feature."));
+	if (msg->has_data_length && msg->data_length > MAX_MULTISIG_DATA_LEN) {
+		fsm_sendFailure(FailureType_Failure_DataError, _("Exceeded max data length."));
 		ethereum_signing_abort();
 		return;
 	}
 
-	data_total = 132;
+    if (msg->data_initial_chunk.size != msg->data_length) {
+        fsm_sendFailure(FailureType_Failure_DataError, _("Mismatched data size."));
+        ethereum_signing_abort();
+        return;
+    }
+    uint32_t method_data_len =  msg->data_length == 0 ? 32 : (msg->data_length + 31) / 32;
+	data_total = 68 + 32 + method_data_len;
+
+	// stuff zero to the tail of aligned data_initial_chunk
+	if (method_data_len > msg->data_initial_chunk.size) {
+        memset(&msg->data_initial_chunk.bytes[msg->data_initial_chunk.size], 0, method_data_len - msg->data_initial_chunk.size);
+	}
+	uint8_t method_data_len_uint256[32];
+	memset(method_data_len_uint256, 0, 28);
+    write_be(&method_data_len_uint256[28], msg->data_initial_chunk.size);
 
 	// safety checks
 	if (!ethereum_signing_multisig_check(msg)) {
@@ -831,7 +846,8 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 	hash_data(address_start, 12);
 	hash_data(msg->to.bytes, 20);
 	hash_data(abi_value, 32);
-	hash_data(submit_end, 64);
+    hash_data(method_data_len_uint256, 32);
+    hash_data(msg->data_initial_chunk.bytes, method_data_len);
 
 	memcpy(privkey, node->private_key, 32);
 
