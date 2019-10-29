@@ -750,29 +750,33 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 		chain_id = 0;
 	}
 
-	if (msg->has_data_length && msg->data_length > MAX_MULTISIG_DATA_LEN) {
+	uint32_t chunk_size = msg->has_data_initial_chunk ? msg->data_initial_chunk.size : 0;
+	if (chunk_size && chunk_size > MAX_MULTISIG_DATA_LEN) {
 		fsm_sendFailure(FailureType_Failure_DataError, _("Exceeded max data length."));
 		ethereum_signing_abort();
 		return;
 	}
 
-    if (msg->data_initial_chunk.size != msg->data_length) {
-        fsm_sendFailure(FailureType_Failure_DataError, _("Mismatched data size."));
-        ethereum_signing_abort();
-        return;
-    }
-    uint32_t method_data_len =  msg->data_length == 0 ? 32 : (msg->data_length + 31) / 32;
-	data_total = 68 + 32 + method_data_len;
+    debug_print("chunk_size", "%d", chunk_size);
+
+    uint32_t chunk_packed_len =  chunk_size == 0 ? 32 : (chunk_size + 31) / 32 * 32;
+	data_total = 68 + 32 + chunk_packed_len;
+
+    debug_print("chunk_packed_len", "%d", chunk_packed_len);
+    debug_print("data_total", "%d", data_total);
 
 	// stuff zero to the tail of aligned data_initial_chunk
-	if (method_data_len > msg->data_initial_chunk.size) {
-        memset(&msg->data_initial_chunk.bytes[msg->data_initial_chunk.size], 0, method_data_len - msg->data_initial_chunk.size);
+	if (chunk_packed_len > chunk_size) {
+        memset(&msg->data_initial_chunk.bytes[chunk_size], 0, chunk_packed_len - chunk_size);
 	}
-	uint8_t method_data_len_uint256[32];
-	memset(method_data_len_uint256, 0, 28);
-    write_be(&method_data_len_uint256[28], msg->data_initial_chunk.size);
+	uint8_t chunk_size_uint256[32];
+	memset(chunk_size_uint256, 0, 28);
+    write_be(&chunk_size_uint256[28], chunk_size);
 
-	// safety checks
+    debug_print_binary("chunk_size_uint256", chunk_size_uint256, sizeof(chunk_size_uint256));
+    debug_print_binary("chunk", msg->data_initial_chunk.bytes, chunk_packed_len);
+
+    // safety checks
 	if (!ethereum_signing_multisig_check(msg)) {
 		fsm_sendFailure(FailureType_Failure_DataError, _("Safety check failed"));
 		ethereum_signing_abort();
@@ -846,8 +850,8 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 	hash_data(address_start, 12);
 	hash_data(msg->to.bytes, 20);
 	hash_data(abi_value, 32);
-    hash_data(method_data_len_uint256, 32);
-    hash_data(msg->data_initial_chunk.bytes, method_data_len);
+    hash_data(chunk_size_uint256, 32);
+    hash_data(msg->data_initial_chunk.bytes, chunk_packed_len);
 
 	memcpy(privkey, node->private_key, 32);
 
