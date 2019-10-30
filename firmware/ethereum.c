@@ -387,7 +387,7 @@ static void layoutEthereumData(const uint8_t *data, uint32_t len, uint32_t total
 static void layoutEthereumFee(const uint8_t *value, uint32_t value_len,
 							  const uint8_t *gas_price, uint32_t gas_price_len,
 							  const uint8_t *gas_limit, uint32_t gas_limit_len,
-							  bool is_token)
+							  TokenType *token)
 {
 	bignum256 val, gas;
 	uint8_t pad_val[32];
@@ -409,11 +409,7 @@ static void layoutEthereumFee(const uint8_t *value, uint32_t value_len,
 	memcpy(pad_val + (32 - value_len), value, value_len);
 	bn_read_be(pad_val, &val);
 
-	if (bn_is_zero(&val)) {
-		strcpy(tx_value, is_token ? _("token") : _("message"));
-	} else {
-		ethereumFormatAmount(&val, NULL, tx_value, sizeof(tx_value));
-	}
+	ethereumFormatAmount(&val, token, tx_value, sizeof(tx_value));
 
 	layoutDialogSwipe(&bmp_icon_question,
 		_("Cancel"),
@@ -537,6 +533,30 @@ int signatures_ok_Alltoken(EthereumSignTx *msg)
 	}
 	
 	return 1;
+}
+
+int verify_token_sig(uint32_t msg_chain_id, uint8_t to[], uint8_t ticker_bytes[], uint32_t ticker_size
+        , uint32_t TOKENdecimals, uint32_t TOKENpublickeynumber, uint8_t TOKENsignedfortickerhash[])
+{
+    unsigned char bufunsigne[1+20+32+4];
+    uint8_t hash[32];
+    unsigned char i=0;
+
+    bufunsigne[i] = msg_chain_id;
+    i++;
+    memcpy(&bufunsigne[i], to, 20);
+    i += 20;
+    memcpy(&bufunsigne[i], ticker_bytes, ticker_size);
+    i += ticker_size;
+    bufunsigne[i] = (unsigned char)TOKENdecimals;
+    i++;
+    sha256_Raw(bufunsigne,i, hash);
+
+    if (ecdsa_verify_digest(&secp256k1, pubkeytoken[TOKENpublickeynumber], TOKENsignedfortickerhash, hash) != 0) { // failure
+        return 0;
+    }
+
+    return 1;
 }
 
 /**********************************/
@@ -764,7 +784,8 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 		chain_id = 0;
 	}
 
-	uint32_t chunk_size = msg->has_data_initial_chunk ? msg->data_initial_chunk.size : 0;
+	bool is_token = msg->has_data_initial_chunk;
+	uint32_t chunk_size = is_token ? msg->data_initial_chunk.size : 0;
 	if (chunk_size && chunk_size > MAX_MULTISIG_DATA_LEN) {
 		fsm_sendFailure(FailureType_Failure_DataError, _("Exceeded max data length."));
 		ethereum_signing_abort();
@@ -789,6 +810,54 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
     chunk_size_u256[30] = chunk_size >> 8;
     chunk_size_u256[31] = chunk_size;
 
+    // detect token and parse transfer arguments
+    uint8_t *to_bytes;
+    uint32_t to_len;
+    uint8_t *amount_bytes;
+    uint32_t amount_len;
+    TokenType *token = NULL;
+    TokenType TOKEN;
+    if (is_token) {
+        token = tokenByChainAddress(chain_id, msg->to.bytes);
+        if (token == UnknownToken) {
+            // int verify_token_sig(uint32_t msg_chain_id, uint8_t to[], uint8_t ticker_bytes[], uint32_t ticker_size
+            //        , uint32_t TOKENdecimals, uint32_t TOKENpublickeynumber, uint8_t TOKENsignedfortickerhash[])
+            if (verify_token_sig(msg->chain_id, msg->to.bytes, msg->TOKENticker.bytes, msg->TOKENticker.size
+                    , msg->TOKENdecimals, msg->TOKENpublickeynumber, msg->TOKENsignedfortickerhash.bytes)) {
+                TOKEN.chain_id = chain_id;
+                memcpy(TOKEN.address, msg->to.bytes, 20);
+                memcpy(TOKEN.ticker, msg->TOKENticker.bytes, msg->TOKENticker.size);
+                TOKEN.ticker[msg->TOKENticker.size] = 0;
+                TOKEN.decimals = msg->TOKENdecimals;
+                token = &TOKEN;
+            } else {
+                token = UnknownToken;
+            }
+        }
+        // parse chunk data as ERC20 transfer
+        static uint8_t TRANSFER_SIG[4] = {0xa9, 0x05, 0x9c, 0xbb};
+        // check method sig
+        if (memcmp(TRANSFER_SIG, msg->data_initial_chunk.bytes, 4)) {
+            fsm_sendFailure(FailureType_Failure_DataError, _("Invalid method signature in data field"));
+            ethereum_signing_abort();
+            return;
+        }
+        if (msg->data_initial_chunk.size != 68) {
+            fsm_sendFailure(FailureType_Failure_DataError, _("Invalid arguments data size"));
+            ethereum_signing_abort();
+            return;
+        }
+        to_bytes = &msg->data_initial_chunk.bytes[4 + 12];
+        to_len = 20;
+        amount_bytes = &msg->data_initial_chunk.bytes[4 + 32];
+        amount_len = 32;
+    } else {
+        to_bytes = msg->to.bytes;
+        to_len = msg->to.size;
+        amount_bytes = msg->value.bytes;
+        amount_len = msg->value.size;
+    }
+
     // safety checks
 	if (!ethereum_signing_multisig_check(msg)) {
 		fsm_sendFailure(FailureType_Failure_DataError, _("Safety check failed"));
@@ -797,16 +866,16 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 	}
 
 	// todo layout ethereum form
-	layoutEthereumConfirmTx(msg->to.bytes, msg->to.size, msg->value.bytes, msg->value.size, NULL);
+	layoutEthereumConfirmTx(to_bytes, to_len, amount_bytes, amount_len, token);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		ethereum_signing_abort();
 		return;
 	}
 
-	layoutEthereumFee(msg->value.bytes, msg->value.size,
+	layoutEthereumFee(amount_bytes, amount_len,
 					  msg->gas_price.bytes, msg->gas_price.size,
-					  msg->gas_limit.bytes, msg->gas_limit.size, false);
+					  msg->gas_limit.bytes, msg->gas_limit.size, token);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		ethereum_signing_abort();
@@ -1139,7 +1208,7 @@ void ethereum_signing_init(EthereumSignTx *msg, const HDNode *node)
 
 	layoutEthereumFee(msg->value.bytes, msg->value.size,
 					  msg->gas_price.bytes, msg->gas_price.size,
-					  msg->gas_limit.bytes, msg->gas_limit.size, token != NULL);
+					  msg->gas_limit.bytes, msg->gas_limit.size, token);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		ethereum_signing_abort();
