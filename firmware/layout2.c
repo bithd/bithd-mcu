@@ -1063,7 +1063,7 @@ void debug_print(const char *title, const char *fmt, ...) {
     for (int i = 0; i < 4 && len > 0; i++) {
         str_len = len > 16 ? 16 : len;
         memcpy(buf + 20 * i, msg + 16 * i, str_len);
-        len -= 16;
+        len -= str_len;
     }
     layoutDialog(NULL, NULL, NULL, NULL, title, buf, buf + 20, buf + 40, buf + 60, "");
 
@@ -1079,7 +1079,7 @@ void debug_print_binary(const char *title, const uint8_t *data, uint32_t len) {
         for (int i = 0; i < 4 && len > 0; i++) {
             str_len = len > 8 ? 8 : len;
             data2hex(data, str_len, hex + 20 * i);
-            len -= 8;
+            len -= str_len;
             data += 8;
         }
 
