@@ -1055,6 +1055,7 @@ void debug_print(const char *title, const char *fmt, ...) {
     uint32_t len;
     uint32_t str_len;
     va_list args;
+    memset(msg, 0, sizeof(msg));
     va_start(args, fmt);
     len = vsnprintf(msg, sizeof(msg), fmt, args);
     va_end(args);
