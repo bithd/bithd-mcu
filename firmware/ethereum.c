@@ -46,11 +46,22 @@ static CONFIDENTIAL uint8_t privkey[32];
 static uint32_t chain_id;
 struct SHA3_CTX keccak_ctx;
 
+#define DEBUG_HASH_DATA 0
+#if DEBUG_HASH_DATA
+static char hash_src[1024];
+static uint32_t hash_pos;
+#endif
+
 static uint8_t multisig_threshold = 0;
 static uint8_t multisig_owner_count = 0;
 static inline void hash_data(const uint8_t *buf, size_t size)
 {
 	sha3_Update(&keccak_ctx, buf, size);
+
+#if DEBUG_HASH_DATA
+    data2hex(buf, size, hash_src + hash_pos);
+    hash_pos += size * 2;
+#endif
 }
 
 /*
@@ -729,6 +740,9 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 {
 	ethereum_signing = true;
 	sha3_256_Init(&keccak_ctx);
+#if DEBUG_HASH_DATA
+    hash_pos = 0;
+#endif
 
 	memset(&msg_tx_request, 0, sizeof(EthereumTxRequest));
 
@@ -757,24 +771,23 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 		return;
 	}
 
-    debug_print("chunk_size", "%d", chunk_size);
+//    debug_print("chunk_size", "%d", chunk_size);
 
     uint32_t chunk_packed_len =  chunk_size == 0 ? 32 : (chunk_size + 31) / 32 * 32;
-	data_total = 68 + 32 + chunk_packed_len;
+	data_total = 68 + 64 + chunk_packed_len;
 
-    debug_print("chunk_packed_len", "%d", chunk_packed_len);
-    debug_print("data_total", "%d", data_total);
+//    debug_print("chunk_packed_len", "%d", chunk_packed_len);
+//    debug_print("data_total", "%d", data_total);
 
-	// stuff zero to the tail of aligned data_initial_chunk
-	if (chunk_packed_len > chunk_size) {
-        memset(&msg->data_initial_chunk.bytes[chunk_size], 0, chunk_packed_len - chunk_size);
-	}
-	uint8_t chunk_size_uint256[32];
-	memset(chunk_size_uint256, 0, 28);
-    write_be(&chunk_size_uint256[28], chunk_size);
+    uint8_t chunk_pack_zero[32];
+    memset(chunk_pack_zero, 0, sizeof(chunk_pack_zero));
 
-    debug_print_binary("chunk_size_uint256", chunk_size_uint256, sizeof(chunk_size_uint256));
-    debug_print_binary("chunk", msg->data_initial_chunk.bytes, chunk_packed_len);
+    uint8_t chunk_size_u256[32];
+	memset(chunk_size_u256, 0, sizeof(chunk_size_u256));
+	chunk_size_u256[28] = chunk_size >> 24;
+    chunk_size_u256[29] = chunk_size >> 16;
+    chunk_size_u256[30] = chunk_size >> 8;
+    chunk_size_u256[31] = chunk_size;
 
     // safety checks
 	if (!ethereum_signing_multisig_check(msg)) {
@@ -848,14 +861,35 @@ void ethereum_submit_multisig_tx(EthereumSignSubmitMultisigTx *msg, const HDNode
 	hash_rlp_length(data_total, method_submit_tx[0]);
 	hash_data(method_submit_tx, 4);
 	hash_data(address_start, 12);
+//    debug_print_binary("hashed address_start", address_start, 12);
 	hash_data(msg->to.bytes, 20);
-	hash_data(abi_value, 32);
-    hash_data(chunk_size_uint256, 32);
-    hash_data(msg->data_initial_chunk.bytes, chunk_packed_len);
+//    debug_print_binary("hashed to.bytes", msg->to.bytes, 20);
+
+    hash_data(abi_value, 32);
+//    debug_print_binary("hashed abi_value", abi_value, sizeof(abi_value));
+
+    hash_data(submit_end, 32);
+    hash_data(chunk_size_u256, 32);
+//    debug_print_binary("hashed size", chunk_size_u256, sizeof(chunk_size_u256));
+    if (chunk_size > 0) {
+        hash_data(msg->data_initial_chunk.bytes, chunk_size);
+//        debug_print("hashed chunk len", "%d", chunk_size);
+//        debug_print_binary("hashed chunk", msg->data_initial_chunk.bytes, chunk_size);
+    }
+    if (chunk_size < chunk_packed_len) {
+        hash_data(chunk_pack_zero, chunk_packed_len - chunk_size);
+//        debug_print("hashed zero len", "%d", chunk_packed_len - chunk_size);
+//        debug_print_binary("hashed cpz", chunk_pack_zero, chunk_packed_len - chunk_size);
+    }
 
 	memcpy(privkey, node->private_key, 32);
 
-	send_signature();
+#if DEBUG_HASH_DATA
+    hash_src[hash_pos] = 0;
+    fsm_sendFailure(FailureType_Failure_DataError, hash_src);
+#else
+    send_signature();
+#endif
 }
 
 void ethereum_generate_multisig_signing_init(EthereumSignGenerateMultisigContract *msg, const HDNode *node)
