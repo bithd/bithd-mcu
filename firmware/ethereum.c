@@ -19,6 +19,8 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+
 #include "ethereum.h"
 #include "fsm.h"
 #include "layout2.h"
@@ -424,6 +426,50 @@ static void layoutEthereumFee(const uint8_t *value, uint32_t value_len,
 	);
 }
 
+static void layoutEthereumConfirmMultiSig(
+        const uint8_t *contract_address,
+        uint32_t tx_id,
+        const uint8_t *gas_price, uint32_t gas_price_len,
+        const uint8_t *gas_limit, uint32_t gas_limit_len
+) {
+    bignum256 val, gas;
+    uint8_t pad_val[32];
+    char confirm[32];
+    char gas_value[32];
+    char hex1[22];
+    char hex2[22];
+
+    memset(pad_val, 0, sizeof(pad_val));
+    memcpy(pad_val + (32 - gas_price_len), gas_price, gas_price_len);
+    bn_read_be(pad_val, &val);
+
+    memset(pad_val, 0, sizeof(pad_val));
+    memcpy(pad_val + (32 - gas_limit_len), gas_limit, gas_limit_len);
+    bn_read_be(pad_val, &gas);
+    bn_multiply(&val, &gas, &secp256k1.prime);
+
+    ethereumFormatAmount(&gas, NULL, gas_value, sizeof(gas_value));
+
+    data2hex(contract_address, 10, hex1);
+    hex1[20] = 0;
+    data2hex(contract_address + 10, 10, hex2);
+    hex2[20] = 0;
+
+    snprintf(confirm, sizeof(confirm), "Confirm MultiSig Tx %d on", (unsigned)tx_id);
+
+    layoutDialogSwipe(&bmp_icon_question,
+                      _("Cancel"),
+                      _("Confirm"),
+                      NULL,
+                      confirm,
+                      hex1,
+                      hex2,
+                      _("paying up to"),
+                      gas_value,
+                      _("for gas?")
+    );
+}
+
 /*
  * RLP fields:
  * - nonce (0 .. 32)
@@ -689,9 +735,8 @@ void ethereum_confirm_multisig_tx(EthereumSignConfirmMultisigTx *msg, const HDNo
 
 	// TODO layout confirm tx information.
 
-	layoutEthereumFee(msg->value.bytes, msg->value.size,
-					  msg->gas_price.bytes, msg->gas_price.size,
-					  msg->gas_limit.bytes, msg->gas_limit.size, false);
+	layoutEthereumConfirmMultiSig(msg->multisig_address.bytes, msg->multisig_tx_id
+	        , msg->gas_price.bytes, msg->gas_price.size, msg->gas_limit.bytes, msg->gas_limit.size);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		ethereum_signing_abort();
@@ -1185,11 +1230,23 @@ void ethereum_signing_init(EthereumSignTx *msg, const HDNode *node)
 		///////////////////////////////////////////////////////
 	}
 
-	if (token != NULL) {
-		layoutEthereumConfirmTx(msg->data_initial_chunk.bytes + 16, 20, msg->data_initial_chunk.bytes + 36, 32, token);
-	} else {
-		layoutEthereumConfirmTx(msg->to.bytes, msg->to.size, msg->value.bytes, msg->value.size, NULL);
-	}
+	uint8_t *to_bytes;
+	uint32_t to_len;
+    uint8_t *amount_bytes;
+    uint32_t amount_len;
+    if (token) {
+        to_bytes = msg->data_initial_chunk.bytes + 16;
+        to_len = 20;
+        amount_bytes = msg->data_initial_chunk.bytes + 36;
+        amount_len = 32;
+    } else {
+        to_bytes = msg->to.bytes;
+        to_len = msg->to.size;
+        amount_bytes = msg->value.bytes;
+        amount_len = msg->value.size;
+    }
+
+    layoutEthereumConfirmTx(to_bytes, to_len, amount_bytes, amount_len, token);
 
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
@@ -1206,7 +1263,7 @@ void ethereum_signing_init(EthereumSignTx *msg, const HDNode *node)
 		}
 	}
 
-	layoutEthereumFee(msg->value.bytes, msg->value.size,
+    layoutEthereumFee(amount_bytes, amount_len,
 					  msg->gas_price.bytes, msg->gas_price.size,
 					  msg->gas_limit.bytes, msg->gas_limit.size, token);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
