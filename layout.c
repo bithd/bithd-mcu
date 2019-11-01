@@ -25,6 +25,7 @@
 void layoutDialog(const BITMAP *icon, const char *btnNo, const char *btnYes, const char *desc, const char *line1, const char *line2, const char *line3, const char *line4, const char *line5, const char *line6)
 {
 	int left = 0;
+	int line_pos_add = 0;
 	oledClear();
 	if (icon) {
 		oledDrawBitmap(0, 0, icon);
@@ -41,9 +42,12 @@ void layoutDialog(const BITMAP *icon, const char *btnNo, const char *btnYes, con
 		}
 	} else {
 		if (line5) oledDrawString(left, 4 * 9, line5);
-		if (line6) oledDrawString(left, 5 * 9, line6);
+		if (line6) {
+		    oledDrawString(left, 5 * 9, line6);
+            line_pos_add = 2;
+		}
 		if (btnYes || btnNo) {
-			oledHLine(OLED_HEIGHT - 13);
+			oledHLine(OLED_HEIGHT - 13 + line_pos_add);
 		}
 	}
 	if (btnNo) {
