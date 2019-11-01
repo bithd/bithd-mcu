@@ -449,24 +449,25 @@ static void layoutEthereumConfirmMultiSig(
     bn_multiply(&val, &gas, &secp256k1.prime);
 
     ethereumFormatAmount(&gas, NULL, gas_value, sizeof(gas_value));
+    strcat(gas_value, " ?");
 
     data2hex(contract_address, 10, hex1);
     hex1[20] = 0;
     data2hex(contract_address + 10, 10, hex2);
     hex2[20] = 0;
 
-    snprintf(confirm, sizeof(confirm), "Confirm MultiSig Tx %d on", (unsigned)tx_id);
+    snprintf(confirm, sizeof(confirm), "for multisig tx %d", (unsigned)tx_id);
 
-    layoutDialogSwipe(&bmp_icon_question,
+    layoutDialogSwipe(NULL,
                       _("Cancel"),
                       _("Confirm"),
                       NULL,
-                      confirm,
+                      _("Exec confirm on contract"),
                       hex1,
                       hex2,
-                      _("paying up to"),
-                      gas_value,
-                      _("for gas?")
+                      confirm,
+                      _("paying gas up to"),
+                      gas_value
     );
 }
 
