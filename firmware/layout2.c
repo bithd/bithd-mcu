@@ -20,6 +20,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include "protect.h"
 
 #include "layout2.h"
 #include "storage.h"
@@ -1045,3 +1048,43 @@ const char **split_message_hex(const uint8_t *msg, uint32_t len)
 }
 //FD6F44BD04AD10B3E695CA74763B0C33629A148EB395C9977F94B42483084361263881A36290B9336510F769BF975512B435F53B891942ACA69E7A3AA662B132
 //fd6f44bd04ad10b3e695ca74763b0c33629a148eb395c9977f94b42483084361d9c77e5c9d6f46cc9aef08964068aaec0678e7ab262f5d8f1933e45229d3900f
+
+void debug_print(const char *title, const char *fmt, ...) {
+    char msg[65];
+    char buf[80];
+    uint32_t len;
+    uint32_t str_len;
+    va_list args;
+    memset(msg, 0, sizeof(msg));
+    va_start(args, fmt);
+    len = vsnprintf(msg, sizeof(msg), fmt, args);
+    va_end(args);
+    memset(buf, 0, sizeof(buf));
+    for (int i = 0; i < 4 && len > 0; i++) {
+        str_len = len > 16 ? 16 : len;
+        memcpy(buf + 20 * i, msg + 16 * i, str_len);
+        len -= str_len;
+    }
+    layoutDialog(NULL, NULL, NULL, NULL, title, buf, buf + 20, buf + 40, buf + 60, "");
+
+    protectButton(ButtonRequestType_ButtonRequest_SignTx, false);
+}
+
+void debug_print_binary(const char *title, const uint8_t *data, uint32_t len) {
+    char hex[80];
+    uint32_t str_len;
+
+    while (len > 0) {
+        memset(hex, 0, sizeof(hex));
+        for (int i = 0; i < 4 && len > 0; i++) {
+            str_len = len > 8 ? 8 : len;
+            data2hex(data, str_len, hex + 20 * i);
+            len -= str_len;
+            data += 8;
+        }
+
+        layoutDialog(NULL, NULL, NULL, NULL, title, hex, hex + 20, hex + 40, hex + 60, "");
+
+        protectButton(ButtonRequestType_ButtonRequest_SignTx, false);
+    }
+}

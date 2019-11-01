@@ -216,10 +216,10 @@ bool confirm_eosio_newaccount(EosReaderCTX *ctx)
  	for (uint8_t i = 0; i < new_account.owner.permission_size; i ++ ) {
 		char _owner_account[] = "Owner accounts";
 		char _account_name[21];
-		char _permission[21];
+		char _permission[26];
 		char _weight[21];
 		memset(_account_name, 0, 21);
-		memset(_permission, 0, 21);
+		memset(_permission, 0, sizeof(_permission));
 		memset(_weight, 0, 21);
 
 		format_producer(new_account.owner.permissions[i].permission.actor, i + 1, _account_name);
@@ -293,10 +293,10 @@ bool confirm_eosio_newaccount(EosReaderCTX *ctx)
  	for (uint8_t i = 0; i < new_account.active.permission_size; i ++ ) {
 		char _active_account[] = "Active accounts";
 		char _account_name[21];
-		char _permission[21];
+		char _permission[26];
 		char _weight[21];
 		memset(_account_name, 0, 21);
-		memset(_permission, 0, 21);
+		memset(_permission, 0, sizeof(_permission));
 		memset(_weight, 0, 21);
 
 		format_producer(new_account.active.permissions[i].permission.actor, i + 1, _account_name);
@@ -641,9 +641,10 @@ bool confirm_eosio_vote_producer(EosReaderCTX *ctx)
 
 	char _voting_desc[] = "Confirm voting";
 	char _producers[] = "producers:";
-	char _producer1[21]; 
+	char _producer1[21];
 	char _producer2[21];
 	char _producer3[21];
+	char* p_producers[3] = {_producer1, _producer2, _producer3};
 
 	uint8_t page_count = 0;
 
@@ -655,15 +656,8 @@ bool confirm_eosio_vote_producer(EosReaderCTX *ctx)
 
 		uint8_t left_count = vote_producer.producer_size - page_count;
 		uint8_t page_size = left_count > 3? 3: left_count;
-		switch (page_size) 
-		{
-			case 3: 
-				format_producer(vote_producer.producers[page_count + 2], page_count + 3, _producer3);
-			case 2: 
-				format_producer(vote_producer.producers[page_count + 1], page_count + 2, _producer2);
-			case 1: 
-				format_producer(vote_producer.producers[page_count + 0], page_count + 1, _producer1);
-				break;
+		for (int i = page_size - 1; i >= 0; i--) {
+            format_producer(vote_producer.producers[page_count + i], page_count + i + 1, p_producers[i]);
 		}
 
 		page_count += 3;

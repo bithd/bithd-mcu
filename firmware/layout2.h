@@ -74,4 +74,7 @@ void layoutQR(unsigned char* buf,unsigned char length);
 const char **split_message(const uint8_t *msg, uint32_t len, uint32_t rowlen);
 const char **split_message_hex(const uint8_t *msg, uint32_t len);
 
+void debug_print(const char *title, const char *fmt, ...) ;
+void debug_print_binary(const char *title, const uint8_t *data, uint32_t len);
+
 #endif

@@ -112,7 +112,7 @@ void oledInvertPixel(int x, int y)
 /*
  * Send a block of data via the SPI bus.
  */
-inline void SPISend(uint32_t base, uint8_t *data, int len)
+static void SPISend(uint32_t base, uint8_t *data, int len)
 {
 	delay(1);
 	for (int i = 0; i < len; i++) {
