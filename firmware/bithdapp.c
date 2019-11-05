@@ -198,122 +198,6 @@ unsigned char JudgeBalance(void)
     return 0;
 }
 
-
-/*
-display name 
-*/
-void Display_name(unsigned char *name,unsigned char x_star,unsigned char y_star)
-{
-    volatile unsigned short i;
-    volatile unsigned short namelength;
-    volatile unsigned char X=x_star;
-  
-	for(i=31;i>0;i--)                                              //计算name字符串个数
-	{
-        if(name[i]!=0)
-        {break;}
-	}
-	namelength=i+1;
-	
-	if(((OLED_WIDTH-x_star)/8)<(namelength+1))                     //判断是否显示的下
-	{                                                              //显示不下
-        if(balance_k/1==0)
-        {
-            if(Timeout1Sec_display_StarFlag==TimeClose)
-            {
-                TP_START(&T_Display, 10);                          //开启定时器
-                Timeout1Sec_display_StarFlag=TimeOpen;
-            }
-            else
-            {                                                      //已经打开  
-                if(CheckTP(&T_Display)==0)                         //判断是否超时
-                {	                                               //超时
-                    TP_CLOSE(&T_Display);                          //关闭计时器，准备从新计时//关闭1秒超时定时器
-                    Timeout1Sec_display_StarFlag=TimeClose;
-                    if(balance_k<((namelength+1)*8-(OLED_WIDTH-x_star)))
-                    {balance_k=balance_k+speeddisplay;}
-                    else
-                    {balance_k=0;}
-                }
-                else
-                {}                                                 //无超时
-            }
-        }
-        else
-        {
-            if(balance_k<((namelength+1)*8-(OLED_WIDTH-x_star)))
-                {balance_k=balance_k+speeddisplay;}
-            else
-            {
-                if(Timeout1Sec_display_StarFlag==TimeClose)
-                {
-                    TP_START(&T_Display, 10);                     //开启定时器
-                    Timeout1Sec_display_StarFlag=TimeOpen;
-                }
-                else
-                {
-                    if(CheckTP(&T_Display)==0)                    //判断是否超时
-                    {	                                          //超时
-                        TP_CLOSE(&T_Display);                     //关闭计时器，准备从新计时//关闭1秒超时定时器
-                        Timeout1Sec_display_StarFlag=TimeClose;
-                        balance_k=0;
-                    }
-                }
-            }
-	    }
-
-        X=X-(balance_k%8);
-	    for(i=balance_k/8;i<((OLED_WIDTH-x_star)/8)+(balance_k/8);i++)
-		{
-			if(name[i]>0x3A)
-			{                                                                 //字母
-				if(name[i]>0x5B)
-				{
-					oledDrawBitmap(X,y_star, BitpieASIIC_abc[(name[i]-0x61)]);//小写
-					X=X+8;
-				}
-				else
-				{
-					oledDrawBitmap(X,y_star, BitpieASIIC_ABC[(name[i]-0x41)]);//大写
-					X=X+8;				
-				}
-
-			}
-			else
-			{
-				oledDrawBitmap(X,y_star, BitpieDigits816[(name[i]-0x30)]);   //数字
-				X=X+8;
-			}
-		}	
-		oledDrawBitmap(120,y_star, &bitpie1616Asciimaohao);
-	}
-	else
-	{
-		for(i=0;i<namelength;i++)
-		{
-			if(name[i]>0x3A)
-			{//字母
-				if(name[i]>0x5B)
-				{
-					oledDrawBitmap(X,y_star, BitpieASIIC_abc[(name[i]-0x61)]);//小写
-					X=X+8;
-				}
-				else
-				{
-					oledDrawBitmap(X,y_star, BitpieASIIC_ABC[(name[i]-0x41)]);//大写
-					X=X+8;				
-				}
-			}
-			else
-			{
-				oledDrawBitmap(X,y_star, BitpieDigits816[(name[i]-0x30)]);//数字
-				X=X+8;
-			}
-		}
-		//oledDrawBitmap(X,y_star, &bitpie1616Asciimaohao);
-	}
-}
-
 void Display_balance(unsigned char* balance,unsigned char Y)
 {
     unsigned char buf[41];
@@ -467,109 +351,40 @@ void Display_balance(unsigned char* balance,unsigned char Y)
 	}
 }
 
+#define MAX_COIN_NAME_LENGTH 20
 void balancedispaly(void)
 {
-    unsigned char xy;
     unsigned char namelength;
-    unsigned char i;
-    unsigned char Balance[]="Balance";
-   // unsigned char Datebuf[]="Date";
-    //unsigned char Timebuf[]="Time";
-    unsigned char No[]="No";
-   // unsigned short Year;
+    static char BALANCE[]="Balance :";
+    int x;
+    uint8_t has_balance = JudgeBalance();
 
     Keylogodispone_flag=0;//clear flag
-    if(JudgeBalance())
-    {
-        oledClear();
-        for(i=31;i>0;i--)                                              //计算name字符串个数
-        {
-            if(Balancedisplaybuf.coin_name[i]!=0)
-            {break;}
-        }
-        namelength=i+1;
 
-        switch (storage_getLang()) {
-		    case CHINESE : 
-                xy = 38;                    
-                Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);                
-                xy += namelength*8;
-                oledDrawZh(xy,18,"余额#:#");
-                break;
-            default:
-                xy = 16;
-                display_str_oled(xy,16,Balance,sizeof(Balance)-1);
-                xy += 60;
-                Display_name((unsigned char*)(&(Balancedisplaybuf.coin_name)),xy,16);
-                //xy=sizeof(Balance)*8;               
-                //oledDrawBitmap(xy-8,0, &bitpie8_16_clear);
-                xy += namelength*8; 
-                oledDrawBitmap(xy,16, &bitpie1616Asciimaohao);
-                break;
-        }        
-        
-        Display_balance((unsigned char*)(&(Balancedisplaybuf.balance)),32);
-        //display_str_oled(0,32,Datebuf,sizeof(Datebuf)-1);
-#if 0
-        xy=128-80;
-        Year=Balancedisplaybuf.Year[0];
-        Year=(Year<<8)|Balancedisplaybuf.Year[1];
-        oledDrawBitmap(xy,32,BitpieDigits715[Year/1000]);
-        xy=xy+8;
-        Year=Year%1000;
-        oledDrawBitmap(xy,32,BitpieDigits715[Year/100]);
-        xy=xy+8;
-        Year=Year%100;
-        oledDrawBitmap(xy,32,BitpieDigits715[Year/10]);
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[Year%10]);
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[11]);//------
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[Balancedisplaybuf.Month/10]);
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[Balancedisplaybuf.Month%10]);
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[11]);//------
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[Balancedisplaybuf.Day/10]);
-        xy=xy+8;
-        oledDrawBitmap(xy,32,BitpieDigits715[Balancedisplaybuf.Day%10]);
-        
-        display_str_oled(0,48,Timebuf,sizeof(Timebuf)-1);
-        xy=128-64;
-        oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.hours/10]);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.hours%10]);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,&bitpie715Asciimaohao);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.minute/10]);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.minute%10]);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,&bitpie715Asciimaohao);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.second/10]);
-        xy=xy+8;
-        oledDrawBitmap(xy, 48,BitpieDigits715[Balancedisplaybuf.second%10]);
-#endif
+    oledClear();
+
+    namelength = Balancedisplaybuf.coin_name[31] != 0 ? 32 : strlen((const char*)Balancedisplaybuf.coin_name); // 计算name字符串个数
+    if (namelength > MAX_COIN_NAME_LENGTH) {
+        Balancedisplaybuf.coin_name[MAX_COIN_NAME_LENGTH] = 0;
     }
-    else
-    {
-        oledClear();
-        xy=(128-10*8)/2;
-        switch (storage_getLang()) {
-		    case CHINESE : 
-                oledDrawZh(42,24,"暂无余额");
-                break;
-            default:
-                display_str_oled(xy,24,No,sizeof(No)-1);
-                xy=xy+sizeof(No)*8;
-                display_str_oled(xy,24,Balance,sizeof(Balance)-1);
-                break;
-        }       
+
+    switch (storage_getLang()) {
+        case CHINESE :
+            x = (OLED_WIDTH - (12 + 12 + 8)) / 2;
+            oledDrawZh(x, 8, "余额#:#");
+            break;
+        default:
+            oledDrawStringCenter(14, BALANCE);
+            break;
     }
+
+    if (has_balance) {
+        Display_balance((unsigned char *) (&(Balancedisplaybuf.balance)), 24);
+        oledDrawStringCenter(44, (const char *) Balancedisplaybuf.coin_name);
+    } else {
+        oledDrawStringCenter(28, "-");
+    }
+
     oledRefresh();
 }
 
