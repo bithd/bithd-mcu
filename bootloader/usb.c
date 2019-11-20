@@ -42,12 +42,12 @@
 extern void SuccessAck(void);
 extern unsigned char needsuccessack_flag;
 
-#define ENDPOINT_ADDRESS_IN         (0x81)
+//#define ENDPOINT_ADDRESS_IN         (0x81)
 #define ENDPOINT_ADDRESS_OUT        (0x01)
 
 static bool brand_new_firmware;
 
-static const struct usb_device_descriptor dev_descr = {
+/*static const struct usb_device_descriptor dev_descr = {
 	.bLength = USB_DT_DEVICE_SIZE,
 	.bDescriptorType = USB_DT_DEVICE,
 	.bcdUSB = 0x0200,
@@ -62,7 +62,7 @@ static const struct usb_device_descriptor dev_descr = {
 	.iProduct = 2,
 	.iSerialNumber = 3,
 	.bNumConfigurations = 1,
-};
+};*/
 
 static const uint8_t hid_report_descriptor[] = {
 	0x06, 0x00, 0xff,  // USAGE_PAGE (Vendor Defined)
@@ -103,7 +103,7 @@ static const struct {
 	}
 };
 
-static const struct usb_endpoint_descriptor hid_endpoints[2] = {{
+/*static const struct usb_endpoint_descriptor hid_endpoints[2] = {{
 	.bLength = USB_DT_ENDPOINT_SIZE,
 	.bDescriptorType = USB_DT_ENDPOINT,
 	.bEndpointAddress = ENDPOINT_ADDRESS_IN,
@@ -149,7 +149,7 @@ static const struct usb_config_descriptor config = {
 	.bmAttributes = 0x80,
 	.bMaxPower = 0x32,
 	.interface = ifaces,
-};
+};*/
 
 // static const char *usb_strings[] = {
 // 	"SatoshiLabs",
