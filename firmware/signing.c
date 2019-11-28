@@ -975,6 +975,9 @@ static bool signing_sign_decred_input(TxInputType *txinput) {
 
 #define ENABLE_SEGWIT_NONSEGWIT_MIXING  1
 
+inline bool is_bitcoin(const CoinInfo* coinp) {
+    return coinp == &coins[0];
+}
 void signing_txack(TransactionType *tx)
 {
 	if (!signing) {
@@ -1019,7 +1022,7 @@ void signing_txack(TransactionType *tx)
 				}
 #endif
 
-				if (coin->force_bip143 || overwintered) {
+				if (coin->force_bip143 || overwintered || is_bitcoin(coin)) {
 					if (!tx->inputs[0].has_amount) {
 						fsm_sendFailure(FailureType_Failure_DataError, _("Expected input with amount"));
 						signing_abort();
@@ -1030,6 +1033,10 @@ void signing_txack(TransactionType *tx)
 						signing_abort();
 						return;
 					}
+                    if (is_bitcoin(coin)) {
+                        if (next_nonsegwit_input == 0xffffffff)
+                            next_nonsegwit_input = idx1;
+                    }
 					to_spend += tx->inputs[0].amount;
 					authorized_amount += tx->inputs[0].amount;
 					phase1_request_next_input();
