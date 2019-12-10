@@ -1021,8 +1021,6 @@ void signing_txack(TransactionType *tx)
 					return;
 				}
 #endif
-
-				if (coin->force_bip143 || overwintered || is_bitcoin(coin)) {
 					if (!tx->inputs[0].has_amount) {
 						fsm_sendFailure(FailureType_Failure_DataError, _("Expected input with amount"));
 						signing_abort();
@@ -1033,20 +1031,13 @@ void signing_txack(TransactionType *tx)
 						signing_abort();
 						return;
 					}
-                    if (is_bitcoin(coin)) {
+                    if (!(coin->force_bip143 || overwintered)) {
                         if (next_nonsegwit_input == 0xffffffff)
                             next_nonsegwit_input = idx1;
                     }
 					to_spend += tx->inputs[0].amount;
 					authorized_amount += tx->inputs[0].amount;
 					phase1_request_next_input();
-				} else {
-					// remember the first non-segwit input -- this is the first input
-					// we need to sign during phase2
-					if (next_nonsegwit_input == 0xffffffff)
-						next_nonsegwit_input = idx1;
-					send_req_2_prev_meta();
-				}
 			} else if  (tx->inputs[0].script_type == InputScriptType_SPENDWITNESS
 						|| tx->inputs[0].script_type == InputScriptType_SPENDP2SHWITNESS) {
 				if (coin->decred) {
