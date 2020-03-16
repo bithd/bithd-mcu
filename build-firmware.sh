@@ -3,8 +3,8 @@ set -e
 
 IMAGE=trezor-mcu-build
 TAG=${1:-master}
-BINFILE=build/trezor-$TAG.bin
-ELFFILE=build/trezor-$TAG.elf
+BINFILE=build/bithd-$TAG-unsigned.bin
+ELFFILE=build/bithd-$TAG.elf
 
 docker build -t $IMAGE .
 docker run -t -v $(pwd)/build:/build:z $IMAGE /bin/sh -c "\
