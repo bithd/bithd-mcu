@@ -3,8 +3,8 @@ set -e
 
 IMAGE=trezor-mcu-build
 TAG=${1:-master}
-BINFILE=build/trezor-$TAG.bin
-ELFFILE=build/trezor-$TAG.elf
+BINFILE=build/bithd-$TAG-unsigned.bin
+ELFFILE=build/bithd-$TAG.elf
 
 docker build -t $IMAGE .
 docker run -t -v $(pwd)/build:/build:z $IMAGE /bin/sh -c "\
@@ -28,6 +28,6 @@ fn = sys.argv[1]
 data = open(fn, 'rb').read()
 print('\n\n')
 print('Filename    :', fn)
-print('Fingerprint :', hashlib.sha256(data[256:]).hexdigest())
+print('Fingerprint :', hashlib.sha256(data).hexdigest())
 print('Size        : %d bytes (out of %d maximum)' % (len(data), 491520))
-" $BINFILE
+" "$BINFILE"
