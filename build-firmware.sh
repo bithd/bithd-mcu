@@ -28,6 +28,6 @@ fn = sys.argv[1]
 data = open(fn, 'rb').read()
 print('\n\n')
 print('Filename    :', fn)
-print('Fingerprint :', hashlib.sha256(data[256:]).hexdigest())
+print('Fingerprint :', hashlib.sha256(data).hexdigest())
 print('Size        : %d bytes (out of %d maximum)' % (len(data), 491520))
-" $BINFILE
+" "$BINFILE"
