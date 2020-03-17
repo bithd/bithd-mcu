@@ -62,3 +62,13 @@ The following is the comparison result for v2.7.3.  The only differences are the
 > 000000e0: 99e8 7a23 fe55 7c4e 09aa 893e 4eba 414d  ..z#.U|N...>N.AM
 > 000000f0: 6bcb 878a f88e d953 7326 2991 1245 27df  k......Ss&)..E'.
 ```
+
+## Build signed image
+
+Based on the upper prepared firmware image, anyone can build the same signed image by signatures uploaded in code repository.
+
+1. Use the build_signed_firmware.py script to generate the signed firmware image
+```shell
+export TAG=v2.7.3
+./script/build_signed_firmware.py -f ./build/bithd-$TAG-prepared.bin -s ./signatures/$TAG.csv
+```
