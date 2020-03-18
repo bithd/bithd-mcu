@@ -7,7 +7,7 @@ BINFILE=build/bithd-$TAG-unsigned.bin
 ELFFILE=build/bithd-$TAG.elf
 
 docker build -t $IMAGE .
-docker run -t -v $(pwd)/build:/build:z $IMAGE /bin/sh -c "\
+docker run -t -v "$(pwd)/build:/build:z" $IMAGE /bin/sh -c "\
 	git clone https://github.com/bithd/bithd-mcu && \
 	cd bithd-mcu && \
 	git checkout $TAG && \
