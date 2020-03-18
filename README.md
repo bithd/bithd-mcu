@@ -67,6 +67,12 @@ The following is the comparison result for v2.7.3.  The only differences are the
 
 Based on the upper prepared firmware image, anyone can build the same signed image by signatures uploaded in code repository.
 
+1. Set up pipenv
+```shell
+pipenv install
+pipenv shell
+```
+
 1. Use the build_signed_firmware.py script to generate the signed firmware image
 ```shell
 export TAG=v2.7.3
