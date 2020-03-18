@@ -69,7 +69,7 @@ Based on the upper prepared firmware image, anyone can build the same signed ima
 
 1. Set up pipenv
 ```shell
-pipenv install
+pipenv --python 3 install
 pipenv shell
 ```
 
