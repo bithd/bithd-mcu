@@ -22,7 +22,6 @@ OBJS += recovery.o
 OBJS += reset.o
 OBJS += signing.o
 OBJS += crypto.o
-OBJS += cash_addr.o
 OBJS += coin_info.o
 OBJS += eth_multisig_wallet.o
 OBJS += ethereum.o
@@ -68,6 +67,7 @@ OBJS += ../vendor/trezor-crypto/pbkdf2.o
 OBJS += ../vendor/trezor-crypto/base32.o
 OBJS += ../vendor/trezor-crypto/base58.o
 OBJS += ../vendor/trezor-crypto/segwit_addr.o
+OBJS += ../vendor/trezor-crypto/cash_addr.o
 
 OBJS += ../vendor/trezor-crypto/ripemd160.o
 OBJS += ../vendor/trezor-crypto/sha2.o
