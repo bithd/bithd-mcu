@@ -22,7 +22,7 @@
 
 #define VERSION_MAJOR 4
 #define VERSION_MINOR 1
-#define VERSION_PATCH 3
+#define VERSION_PATCH 4
 
 #define STR(X) #X
 #define VERSTR(X) STR(X)
