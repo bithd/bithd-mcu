@@ -8,7 +8,8 @@ https://bithd.com/
 2. `git clone https://github.com/bithd/bithd-mcu.git`
 3. `cd bithd-mcu`
 4. `export TAG=v2.7.3; ./build-firmware.sh $TAG` (where TAG is v2.7.3 for example)
-5. `./script/prepare_firmware.py -f ./build/bithd-$TAG-unsigned.bin` (prepare the image to sign)
+5. `pipenv --python 3 install` (set up pipenv)
+6. `pipenv run ./script/prepare_firmware.py -f ./build/bithd-$TAG-unsigned.bin` (prepare the image to sign)
 
 This creates file `build/bithd-$TAG-unsigned.bin` and prints its fingerprint and size at the end of the build log.
 
@@ -67,12 +68,10 @@ The following is the comparison result for v2.7.3.  The only differences are the
 
 Based on the upper prepared firmware image, anyone can build the same signed image by signatures uploaded in code repository.
 
-1. `pipenv --python 3 install` (set up pipenv)
-
-2. Use the build_signed_firmware.py script to generate the signed firmware image
+1. Use the build_signed_firmware.py script to generate the signed firmware image
 ```shell
 export TAG=v2.7.3
 pipenv run ./script/build_signed_firmware.py -f ./build/bithd-$TAG-prepared.bin -s ./signatures/$TAG.csv
 ```
 
-3. `shasum -a 256 ./build/bithd-$TAG-signed.bin` (calculate sha256 checksum)
+2. `shasum -a 256 ./build/bithd-$TAG-signed.bin` (calculate sha256 checksum)
