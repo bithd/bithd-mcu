@@ -17,6 +17,8 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
+
 #include <libopencm3/stm32/flash.h>
 
 #include "trezor.h"
@@ -877,13 +879,28 @@ void fsm_msgEthereumGetAddress(EthereumGetAddress *msg)
 	layoutHome();
 }
 
+bool isprintable(const unsigned char *s, const size_t len) {
+	for (size_t i = 0; i < len; i++) {
+		if (!isprint(*s++))
+			return false;
+	}
+	return true;
+}
+
 void fsm_msgEthereumSignMessage(EthereumSignMessage *msg)
 {
 	RESP_INIT(EthereumMessageSignature);
 
 	CHECK_INITIALIZED
 
-	layoutSignMessage(msg->message.bytes, msg->message.size);
+	if (isprintable(msg->message.bytes, msg->message.size)) {
+		layoutSignMessage(msg->message.bytes, msg->message.size);
+	} else {
+		unsigned char buf[65];
+		size_t len = msg->message.size >= 32 ? 32 : msg->message.size;
+		data2hex(msg->message.bytes, len, (char*)buf);
+		layoutSignMessage(buf, len * 2);
+	}
 	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		layoutHome();
