@@ -9,7 +9,6 @@ ELFFILE=build/bithd-$TAG.elf
 docker build -t $IMAGE .
 docker run -t -v "$(pwd)/build:/build:z" -v "$(pwd):/bithd-mcu" $IMAGE /bin/sh -c "\
 	cd /bithd-mcu && \
-	git submodule update --init && \
 	make -C vendor/libopencm3 && \
 	make -C vendor/nanopb/generator/proto && \
 	make -C firmware/protob && \
