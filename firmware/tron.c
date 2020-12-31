@@ -46,7 +46,11 @@ void tron_message_sign(TronSignMessage *msg, const HDNode *node, TronMessageSign
 	}
 	resp->has_address = true;
 	resp->address.size = 20;
-	ethereum_message_hash(msg->message.bytes, msg->message.size, hash);
+    if (msg->do_hash) {
+	    ethereum_message_hash(msg->message.bytes, msg->message.size, hash);
+    } else {
+        memcpy(hash, msg->message.bytes, 32);
+    }
 
 	uint8_t v;
 	if (ecdsa_sign_digest(&secp256k1, node->private_key, hash, resp->signature.bytes, &v, ethereum_is_canonic) != 0) {
