@@ -58,6 +58,7 @@
 #include "rfc6979.h"
 #include "gettext.h"
 #include "eos.h"
+#include "tron.h"
 
 // message methods
 
@@ -1601,6 +1602,34 @@ void fsm_msgCosiSign(CosiSign *msg)
 	ed25519_cosi_sign(msg->data.bytes, msg->data.size, node->private_key, nonce, msg->global_commitment.bytes, msg->global_pubkey.bytes, resp->signature.bytes);
 
 	msg_write(MessageType_MessageType_CosiSignature, resp);
+	layoutHome();
+}
+
+void fsm_msgTronSignMessage(TronSignMessage *msg) {
+	RESP_INIT(TronMessageSignature);
+
+	CHECK_INITIALIZED
+	
+	if (msg->is_text || isprintable(msg->message.bytes, msg->message.size)) {
+		layoutSignMessage(msg->message.bytes, msg->message.size);
+	} else {
+		unsigned char buf[65];
+		size_t len = msg->message.size >= 32 ? 32 : msg->message.size;
+		data2hex(msg->message.bytes, len, (char*)buf);
+		layoutSignMessage(buf, len * 2);
+	}
+	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
+		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		layoutHome();
+		return;
+	}
+
+	CHECK_PIN
+
+	const HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, msg->address_n, msg->address_n_count);
+	if (!node) return;
+
+	tron_message_sign(msg, node, resp);
 	layoutHome();
 }
 
