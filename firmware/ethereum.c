@@ -190,7 +190,7 @@ static void send_request_chunk(void)
 	msg_write(MessageType_MessageType_EthereumTxRequest, &msg_tx_request);
 }
 
-static int ethereum_is_canonic(uint8_t v, uint8_t signature[64])
+int ethereum_is_canonic(uint8_t v, uint8_t signature[64])
 {
 	(void) signature;
 	return (v & 2) == 0;
@@ -1368,7 +1368,7 @@ void ethereum_signing_abort(void)
 	}
 }
 
-static void ethereum_message_hash(const uint8_t *message, size_t message_len, uint8_t hash[32])
+void ethereum_message_hash(const uint8_t *message, size_t message_len, uint8_t hash[32])
 {
 	struct SHA3_CTX ctx;
 	sha3_256_Init(&ctx);

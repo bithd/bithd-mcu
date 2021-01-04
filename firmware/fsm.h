@@ -77,6 +77,8 @@ void fsm_msgNEMSignTx(NEMSignTx *msg);
 void fsm_msgCosiCommit(CosiCommit *msg);
 void fsm_msgCosiSign(CosiSign *msg);
 
+void fsm_msgTronSignMessage(TronSignMessage *msg);
+
 // debug message functions
 #if DEBUG_LINK
 //void fsm_msgDebugLinkDecision(DebugLinkDecision *msg);

@@ -17,6 +17,8 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
+
 #include <libopencm3/stm32/flash.h>
 
 #include "trezor.h"
@@ -56,6 +58,7 @@
 #include "rfc6979.h"
 #include "gettext.h"
 #include "eos.h"
+#include "tron.h"
 
 // message methods
 
@@ -877,13 +880,28 @@ void fsm_msgEthereumGetAddress(EthereumGetAddress *msg)
 	layoutHome();
 }
 
+bool isprintable(const unsigned char *s, const size_t len) {
+	for (size_t i = 0; i < len; i++) {
+		if (!isprint(*s++))
+			return false;
+	}
+	return true;
+}
+
 void fsm_msgEthereumSignMessage(EthereumSignMessage *msg)
 {
 	RESP_INIT(EthereumMessageSignature);
 
 	CHECK_INITIALIZED
 
-	layoutSignMessage(msg->message.bytes, msg->message.size);
+	if (isprintable(msg->message.bytes, msg->message.size)) {
+		layoutSignMessage(msg->message.bytes, msg->message.size);
+	} else {
+		unsigned char buf[65];
+		size_t len = msg->message.size >= 32 ? 32 : msg->message.size;
+		data2hex(msg->message.bytes, len, (char*)buf);
+		layoutSignMessage(buf, len * 2);
+	}
 	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		layoutHome();
@@ -1584,6 +1602,34 @@ void fsm_msgCosiSign(CosiSign *msg)
 	ed25519_cosi_sign(msg->data.bytes, msg->data.size, node->private_key, nonce, msg->global_commitment.bytes, msg->global_pubkey.bytes, resp->signature.bytes);
 
 	msg_write(MessageType_MessageType_CosiSignature, resp);
+	layoutHome();
+}
+
+void fsm_msgTronSignMessage(TronSignMessage *msg) {
+	RESP_INIT(TronMessageSignature);
+
+	CHECK_INITIALIZED
+	
+	if (msg->is_text || isprintable(msg->message.bytes, msg->message.size)) {
+		layoutSignMessage(msg->message.bytes, msg->message.size);
+	} else {
+		unsigned char buf[65];
+		size_t len = msg->message.size >= 32 ? 32 : msg->message.size;
+		data2hex(msg->message.bytes, len, (char*)buf);
+		layoutSignMessage(buf, len * 2);
+	}
+	if (!protectButton(ButtonRequestType_ButtonRequest_ProtectCall, false)) {
+		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		layoutHome();
+		return;
+	}
+
+	CHECK_PIN
+
+	const HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, msg->address_n, msg->address_n_count);
+	if (!node) return;
+
+	tron_message_sign(msg, node, resp);
 	layoutHome();
 }
 
