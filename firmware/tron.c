@@ -53,7 +53,7 @@ void tron_message_sign(TronSignMessage *msg, const HDNode *node, TronMessageSign
     }
 
 	uint8_t v;
-	if (ecdsa_sign_digest(&secp256k1, node->private_key, hash, resp->signature.bytes, &v, ethereum_is_canonic) != 0) {
+	if (ecdsa_sign_digest_DER(&secp256k1, node->private_key, hash, resp->signature.bytes, &v, ethereum_is_canonic) != 0) {
 		fsm_sendFailure(FailureType_Failure_ProcessError, _("Signing failed"));
 		return;
 	}
