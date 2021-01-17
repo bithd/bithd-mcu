@@ -1633,6 +1633,59 @@ void fsm_msgTronSignMessage(TronSignMessage *msg) {
 	layoutHome();
 }
 
+void fsm_msgTronGetAddress(TronGetAddress *msg) {
+	RESP_INIT(TronAddress);
+
+	CHECK_INITIALIZED
+
+	CHECK_PIN
+
+	const HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, msg->address_n, msg->address_n_count);
+	if (!node) return;
+
+	uint8_t eth_address[20];
+	if (!hdnode_get_ethereum_pubkeyhash(node, eth_address))
+		return;
+	tron_eth_2_trx_address(eth_address, resp->address, sizeof(resp->address));
+
+	if (msg->has_show_display && msg->show_display) {
+		char desc[16];
+		strlcpy(desc, "Address:", sizeof(desc));
+
+		bool qrcode = false;
+		for (;;) {
+			layoutAddress(resp->address, desc, qrcode, false, msg->address_n, msg->address_n_count);
+			if (protectButton(ButtonRequestType_ButtonRequest_Address, false)) {
+				break;
+			}
+			qrcode = !qrcode;
+		}
+	}
+
+	msg_write(MessageType_MessageType_TronAddress, resp);
+	layoutHome();
+}
+
+void fsm_msgTronSignRawTx(TronSignRawTx *msg) {
+	RESP_INIT(TronSignature);
+
+	CHECK_INITIALIZED
+
+	if (!msg->raw_tx.size) {
+		fsm_sendFailure(FailureType_Failure_UnexpectedMessage, "empty raw_tx field");
+	}
+
+	CHECK_PIN
+
+	const HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, msg->address_n, msg->address_n_count);
+	if (!node) return;
+
+	tron_sign_raw_tx(msg->raw_tx.bytes, msg->raw_tx.size, node, resp);
+
+	msg_write(MessageType_MessageType_TronSignature, resp);
+	layoutHome();
+}
+
 #if DEBUG_LINK
 
 void fsm_msgDebugLinkGetState(DebugLinkGetState *msg)

@@ -234,3 +234,12 @@ TronSignMessage.prompt		max_size:64
 
 TronMessageSignature.address	max_size:20
 TronMessageSignature.signature	max_size:65
+
+TronGetAddress.address_n		max_count:8
+
+TronAddress.address             max_size:76
+
+TronSignRawTx.address_n         max_count:8
+TronSignRawTx.raw_tx            max_size:1024
+
+TronSignature.signature         max_size:65

@@ -95,6 +95,7 @@ OBJS += ../vendor/nanopb/pb_encode.o
 OBJS += protob/messages.pb.o
 OBJS += protob/storage.pb.o
 OBJS += protob/types.pb.o
+OBJS += protob/tron.pb.o
 
 include ../Makefile.include
 
