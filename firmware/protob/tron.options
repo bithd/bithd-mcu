@@ -1,0 +1,17 @@
+protocol.Any.type_url    max_size:100
+protocol.Any.value       max_size:1000
+
+protocol.raw.Contract.provider   max_size:100
+
+protocol.raw.contract   max_count:1
+
+protocol.TransferContract.owner_address max_size:20
+protocol.TransferContract.to_address    max_size:20
+
+protocol.TransferAssetContract.asset_name   max_size:20
+protocol.TransferAssetContract.owner_address    max_size:20
+protocol.TransferAssetContract.to_address   max_size:20
+
+protocol.TriggerSmartContract.owner_address     max_size:20
+protocol.TriggerSmartContract.contract_address  max_size:20
+protocol.TriggerSmartContract.data              max_size:200

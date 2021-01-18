@@ -78,6 +78,8 @@ void fsm_msgCosiCommit(CosiCommit *msg);
 void fsm_msgCosiSign(CosiSign *msg);
 
 void fsm_msgTronSignMessage(TronSignMessage *msg);
+void fsm_msgTronGetAddress(TronGetAddress *msg);
+void fsm_msgTronSignRawTx(TronSignRawTx *msg);
 
 // debug message functions
 #if DEBUG_LINK

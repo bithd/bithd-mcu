@@ -17,21 +17,15 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __TRON_H__
-#define __TRON_H__
+#ifndef __ERRMSG_H__
+#define __ERRMSG_H__
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "bip32.h"
-#include "messages.pb.h"
-#include "errmsg.h"
-#include "tron_tokens.h"
+#include <stdio.h>
 
-void tron_message_sign(TronSignMessage *msg, const HDNode *node, TronMessageSignature *resp);
-int tron_eth_2_trx_address(const uint8_t *eth_address, char *str, int strsize);
-bool tron_sign_raw_tx(const uint8_t *raw_tx, int raw_tx_size, const HDNode *node, TronSignature *resp);
+typedef char MSG[128];
+inline int errmsg(MSG msg_buf, const int error_code, const char* err_msg) {
+    snprintf(msg_buf, sizeof(MSG), "[%s:%d] %s", __FILE__, __LINE__, err_msg);
+    return error_code;
+}
 
-void tron_format_amount(const uint64_t amount, char *buf, int buflen);
-void tron_format_token_amount(const bignum256 *amnt, ConstTronTokenPtr token, char *buf, int buflen);
-
-#endif  // __TRON_H__
+#endif // __ERRMSG_H__
