@@ -1680,9 +1680,10 @@ void fsm_msgTronSignRawTx(TronSignRawTx *msg) {
 	const HDNode *node = fsm_getDerivedNode(SECP256K1_NAME, msg->address_n, msg->address_n_count);
 	if (!node) return;
 
-	tron_sign_raw_tx(msg->raw_tx.bytes, msg->raw_tx.size, node, resp);
+	if (tron_sign_raw_tx(msg->raw_tx.bytes, msg->raw_tx.size, node, resp)) {
+		msg_write(MessageType_MessageType_TronSignature, resp);
+	}
 
-	msg_write(MessageType_MessageType_TronSignature, resp);
 	layoutHome();
 }
 

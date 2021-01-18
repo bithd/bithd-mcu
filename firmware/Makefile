@@ -37,6 +37,8 @@ OBJS += nem2.o
 OBJS += nem_mosaics.o
 OBJS += bithdapp.o
 OBJS += tron.o
+OBJS += tron_ui.o
+OBJS += tron_tokens.o
 OBJS += debug.o
 
 OBJS +=../timerbitpie.o

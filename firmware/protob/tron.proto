@@ -98,59 +98,57 @@ message TransferAssetContract {
     optional int64 amount = 4;
 }
 
-/*
 enum ResourceCode {
     BANDWIDTH = 0x00;
     ENERGY = 0x01;
 }
 
 message FreezeBalanceContract {
-    bytes owner_address = 1;
-    int64 frozen_balance = 2;
-    int64 frozen_duration = 3;
+    optional bytes owner_address = 1;
+    optional int64 frozen_balance = 2;
+    optional int64 frozen_duration = 3;
 
-    ResourceCode resource = 10;
-    bytes receiver_address = 15;
+    optional ResourceCode resource = 10;
+    optional bytes receiver_address = 15;
 }
 
 message UnfreezeBalanceContract {
-    bytes owner_address = 1;
+    optional bytes owner_address = 1;
 
-    ResourceCode resource = 10;
-    bytes receiver_address = 15;
+    optional ResourceCode resource = 10;
+    optional bytes receiver_address = 15;
 }
 
 message UnfreezeAssetContract {
-    bytes owner_address = 1;
+    optional bytes owner_address = 1;
 }
 
 message VoteAssetContract {
-    bytes owner_address = 1;
+    optional bytes owner_address = 1;
     repeated bytes vote_address = 2;
-    bool support = 3;
-    int32 count = 5;
+    optional bool support = 3;
+    optional int32 count = 5;
 }
 
 message VoteWitnessContract {
     message Vote {
-        bytes vote_address = 1;
-        int64 vote_count = 2;
+        optional bytes vote_address = 1;
+        optional int64 vote_count = 2;
     }
-    bytes owner_address = 1;
+    optional bytes owner_address = 1;
     repeated Vote votes = 2;
-    bool support = 3;
+    optional bool support = 3;
 }
 
 message WithdrawBalanceContract {
-    bytes owner_address = 1;
+    optional bytes owner_address = 1;
 }
 
 message TriggerSmartContract {
-    bytes owner_address = 1;
-    bytes contract_address = 2;
-    int64 call_value = 3;
-    bytes data = 4;
-    int64 call_token_value = 5;
-    int64 token_id = 6;
+    optional bytes owner_address = 1;
+    optional bytes contract_address = 2;
+    optional int64 call_value = 3;
+    optional bytes data = 4;
+    optional int64 call_token_value = 5;
+    optional int64 token_id = 6;
 }
-*/
