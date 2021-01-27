@@ -75,7 +75,7 @@ int tron_eth_2_trx_address(const uint8_t eth_address[20], char *str, int strsize
 	address_bytes[0] = 0x41;	// Tron address prefix
 	memcpy(&address_bytes[1], eth_address, 20);
 
-	int r = base58_encode_check(address_bytes, sizeof(address_bytes), HASHER_SHA2, str, strsize);
+	int r = base58_encode_check(address_bytes, sizeof(address_bytes), HASHER_SHA2D, str, strsize);
 	return r;
 }
 
