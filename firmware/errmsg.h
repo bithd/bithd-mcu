@@ -24,7 +24,7 @@
 
 typedef char MSG[128];
 inline int errmsg(MSG msg_buf, const int error_code, const char* err_msg) {
-    snprintf(msg_buf, sizeof(MSG), "[%s:%d] %s", __FILE__, __LINE__, err_msg);
+    snprintf(msg_buf, sizeof(MSG), "%04x-%s", error_code, err_msg);
     return error_code;
 }
 
