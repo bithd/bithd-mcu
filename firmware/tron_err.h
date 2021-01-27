@@ -21,14 +21,14 @@
 #define __TRON_ERR_H__
 
 enum TRON_ERROR_CODE {
-    E_TRON_DecodeTriggerSmartContract   = 0x30000001,
-    E_TRON_EncodeTronAddress            = 0x30000002,
-    E_TRON_InvalidMethodSignature       = 0x30000003,
-    E_TRON_InvalidContractDataSize      = 0x30000004,
-    E_TRON_InvalidAddress               = 0x30000005,
-    E_TRON_InvalidCallData              = 0x30000006,
-    E_TRON_DecodeTransferContract       = 0x30000007,
-    E_TRON_UnsupportedToken             = 0x30000008,
+    E_TRON_DecodeTriggerSmartContract   = 0x00003001,
+    E_TRON_EncodeTronAddress            = 0x00003002,
+    E_TRON_InvalidMethodSignature       = 0x00003003,
+    E_TRON_InvalidContractDataSize      = 0x00003004,
+    E_TRON_InvalidAddress               = 0x00003005,
+    E_TRON_InvalidCallData              = 0x00003006,
+    E_TRON_DecodeTransferContract       = 0x00003007,
+    E_TRON_UnsupportedToken             = 0x00003008,
 };
 
 #endif // __TRON_ERR_H__

@@ -173,7 +173,7 @@ bool tron_sign_raw_tx(const uint8_t *raw_tx, int raw_tx_size, const HDNode *node
 			fsm_sendFailure(FailureType_Failure_DataError, "contract type_url mismatch");
 			return false;
 		}
-		if (!decode_transfer_contract(&tx.raw_data.contract[0].parameter.value, to_str, sizeof(to_str), &amount, msg))
+		if (decode_transfer_contract(&tx.raw_data.contract[0].parameter.value, to_str, sizeof(to_str), &amount, msg))
 		{
 			fsm_sendFailure(FailureType_Failure_DataError, msg);
 			return false;
