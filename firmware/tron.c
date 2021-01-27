@@ -96,7 +96,7 @@ int decode_transfer_contract(const protocol_Any_value_t *any, char *to_str, unsi
 	return 0;
 }
 
-int decode_trc20_contract(const protocol_Any_value_t *any, char *to_str, unsigned to_str_len, uint8_t **value_bytes, uint32_t *value_len, ConstTronTokenPtr *p_token, MSG msg) {
+int decode_trc20_contract(const protocol_Any_value_t *any, char *to_str, unsigned to_str_len, uint8_t *value_bytes, ConstTronTokenPtr *p_token, MSG msg) {
 	protocol_TriggerSmartContract contract;
 	pb_istream_t stream = pb_istream_from_buffer(any->bytes, any->size);
 	if (!pb_decode(&stream, protocol_TriggerSmartContract_fields, &contract))
@@ -124,8 +124,7 @@ int decode_trc20_contract(const protocol_Any_value_t *any, char *to_str, unsigne
 	if (tron_eth_2_trx_address(&contract.data.bytes[4 + 12], to_str, to_str_len) < 34)
 		return errmsg(msg, E_TRON_EncodeTronAddress, _("Failed to encode to Tron address"));
 
-	*value_bytes = &contract.data.bytes[4 + 32];
-	*value_len = 32;
+	memcpy(value_bytes, &contract.data.bytes[4 + 32], 32);
 
 	return 0;
 }
@@ -143,8 +142,8 @@ bool tron_sign_raw_tx(const uint8_t *raw_data, int raw_data_size, const HDNode *
 	char to_str[36];
 	ConstTronTokenPtr token = NULL;
 	uint64_t amount = 0;
-	uint8_t *value_bytes;
-	uint32_t value_len = 0;
+	uint8_t value_bytes[32];
+	uint32_t value_len = sizeof(value_bytes);
 
 	if (tx.contract_count != 1) {
 		fsm_sendFailure(FailureType_Failure_DataError, "contract array size is not 1");
@@ -171,7 +170,7 @@ bool tron_sign_raw_tx(const uint8_t *raw_data, int raw_data_size, const HDNode *
 			fsm_sendFailure(FailureType_Failure_DataError, "contract type_url mismatch");
 			return false;
 		}
-		if (decode_trc20_contract(&tx.contract[0].parameter.value, to_str, sizeof(to_str), &value_bytes, &value_len, &token, msg))
+		if (decode_trc20_contract(&tx.contract[0].parameter.value, to_str, sizeof(to_str), value_bytes, &token, msg))
 		{
 			fsm_sendFailure(FailureType_Failure_DataError, msg);
 			return false;
@@ -228,15 +227,9 @@ void tron_format_amount(const uint64_t amount, char *buf, int buflen) {
 }
 
 void tron_format_token_amount(const bignum256 *amnt, ConstTronTokenPtr token, char *buf, int buflen) {
-	bignum256 bn1e9;
-	bn_read_uint32(1000000000, &bn1e9);
-	const char *suffix = NULL;
-	int decimals = 18;
 	if (token == NULL) {
 		strlcpy(buf, "Unknown token value", buflen);
 		return;
 	}
-	suffix = token->ticker;
-	decimals = token->decimals;
-	bn_format(amnt, NULL, suffix, decimals, 0, false, buf, buflen);
+	bn_format(amnt, NULL, token->ticker, token->decimals, 0, false, buf, buflen);
 }
