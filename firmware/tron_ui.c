@@ -23,7 +23,7 @@ void layoutTronConfirmTx(const char *to_str, const uint64_t value, const uint8_t
 	}
 
 	// ex: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR
-	char _to1[] = "to 0x________";
+	char _to1[] = "to   ________";
 	char _to2[] = "_____________";
 	char _to3[] = "_____________?";
 
