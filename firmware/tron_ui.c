@@ -23,7 +23,7 @@ void layoutTronConfirmTx(const char *to_str, const uint64_t value, const uint8_t
 	}
 
 	// ex: TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR
-	char _to1[] = "to 0x________";
+	char _to1[] = "to   ________";
 	char _to2[] = "_____________";
 	char _to3[] = "_____________?";
 
@@ -78,9 +78,9 @@ void layoutTronFee(const uint64_t value, const uint8_t *value_bytes, uint32_t va
 		NULL,
 		_("Really send"),
 		tx_value,
-		_("paying up to"),
+		_("and limit max fee to"),
 		gas_value,
-		_("for fee?"),
+		_("?"),
 		NULL
 	);
 }

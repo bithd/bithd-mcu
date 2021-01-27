@@ -28,7 +28,7 @@
 #include "protect.h"
 #include "crypto.h"
 #include "secp256k1.h"
-#include "sha3.h"
+#include "sha2.h"
 #include "address.h"
 #include "util.h"
 #include "gettext.h"
@@ -85,32 +85,30 @@ int decode_transfer_contract(const protocol_Any_value_t *any, char *to_str, unsi
 	if (!pb_decode(&stream, protocol_TransferContract_fields, &contract))
 		return errmsg(msg, E_TRON_DecodeTransferContract, _("Failed to decode TransferContract pb data"));
 
-	if (!contract.has_amount)
-		return errmsg(msg, E_TRON_DecodeTransferContract, _("Missing amount in TransferContract pb data"));
 	*amount = contract.amount;
 
-	if (!contract.has_to_address || contract.to_address.size != 20)
+	if (contract.to_address.size != 21 && contract.to_address.bytes[0] != 0x41)
 		return errmsg(msg, E_TRON_DecodeTransferContract, _("Invalid to_address in TransferContract pb data"));
 
-	if (tron_eth_2_trx_address(contract.to_address.bytes, to_str, to_str_len) < 34)
+	if (tron_eth_2_trx_address(&contract.to_address.bytes[1], to_str, to_str_len) < 34)
 		return errmsg(msg, E_TRON_EncodeTronAddress, _("Failed to encode to Tron address"));
 
 	return 0;
 }
 
-int decode_trc20_contract(const protocol_Any_value_t *any, char *to_str, unsigned to_str_len, uint8_t **value_bytes, uint32_t *value_len, ConstTronTokenPtr *p_token, MSG msg) {
+int decode_trc20_contract(const protocol_Any_value_t *any, char *to_str, unsigned to_str_len, uint8_t *value_bytes, ConstTronTokenPtr *p_token, MSG msg) {
 	protocol_TriggerSmartContract contract;
 	pb_istream_t stream = pb_istream_from_buffer(any->bytes, any->size);
 	if (!pb_decode(&stream, protocol_TriggerSmartContract_fields, &contract))
 		return errmsg(msg, E_TRON_DecodeTriggerSmartContract, _("Failed to decode TriggerSmartContract pb data"));
 
-	if (!contract.has_contract_address || contract.contract_address.size != 20)
+	if (contract.contract_address.size != 21 && contract.contract_address.bytes[0] != 0x41)
 		return errmsg(msg, E_TRON_InvalidAddress, _("Invalid Tron address"));
 
-	if (!contract.has_data || contract.data.size < 4)
+	if (contract.data.size < 4)
 		return errmsg(msg, E_TRON_InvalidCallData, _("Invalid Tron contract call data"));
 
-	*p_token = get_tron_token_by_address(contract.contract_address.bytes);
+	*p_token = get_tron_token_by_address(&contract.contract_address.bytes[1]);
 	if (!*p_token)
 		return errmsg(msg, E_TRON_UnsupportedToken, _("Unsupported token"));
 
@@ -126,18 +124,17 @@ int decode_trc20_contract(const protocol_Any_value_t *any, char *to_str, unsigne
 	if (tron_eth_2_trx_address(&contract.data.bytes[4 + 12], to_str, to_str_len) < 34)
 		return errmsg(msg, E_TRON_EncodeTronAddress, _("Failed to encode to Tron address"));
 
-	*value_bytes = &contract.data.bytes[4 + 32];
-	*value_len = 32;
+	memcpy(value_bytes, &contract.data.bytes[4 + 32], 32);
 
 	return 0;
 }
 
-bool tron_sign_raw_tx(const uint8_t *raw_tx, int raw_tx_size, const HDNode *node, TronSignature *resp)
+bool tron_sign_raw_tx(const uint8_t *raw_data, int raw_data_size, const HDNode *node, TronSignature *resp)
 {
 	// decode raw_tx
-	protocol_Transaction tx;
-	pb_istream_t stream = pb_istream_from_buffer(raw_tx, raw_tx_size);
-	if (!pb_decode(&stream, protocol_Transaction_fields, &tx)) {
+	protocol_Transaction_raw tx;
+	pb_istream_t stream = pb_istream_from_buffer(raw_data, raw_data_size);
+	if (!pb_decode(&stream, protocol_Transaction_raw_fields, &tx)) {
 		fsm_sendFailure(FailureType_Failure_DataError, "failed to decode tx data");
 		return false;
 	}
@@ -145,65 +142,48 @@ bool tron_sign_raw_tx(const uint8_t *raw_tx, int raw_tx_size, const HDNode *node
 	char to_str[36];
 	ConstTronTokenPtr token = NULL;
 	uint64_t amount = 0;
-	uint8_t *value_bytes;
-	uint32_t value_len = 0;
+	uint8_t value_bytes[32];
+	uint32_t value_len = sizeof(value_bytes);
 
-	if (!tx.has_raw_data) {
-		fsm_sendFailure(FailureType_Failure_DataError, "has no raw field");
-		return false;
-	}
-	if (tx.raw_data.contract_count != 1) {
+	if (tx.contract_count != 1) {
 		fsm_sendFailure(FailureType_Failure_DataError, "contract array size is not 1");
 		return false;
 	}
-	if (!tx.raw_data.contract[0].has_type) {
-		fsm_sendFailure(FailureType_Failure_DataError, "contract has no type field");
-		return false;
-	}
-	if (!tx.raw_data.contract[0].has_parameter) {
-		fsm_sendFailure(FailureType_Failure_DataError, "contract has no parameter field");
-		return false;
-	}
 	MSG msg;
-	switch (tx.raw_data.contract[0].type)
+	switch (tx.contract[0].type)
 	{
-	case protocol_Contract_ContractType_TransferContract:
-		if (strcmp(tx.raw_data.contract[0].parameter.type_url, "type.googleapis.com/protocol.TransferContrac"))
+	case protocol_Transaction_Contract_ContractType_TransferContract:
+		if (strcmp(tx.contract[0].parameter.type_url, "type.googleapis.com/protocol.TransferContract"))
 		{
 			fsm_sendFailure(FailureType_Failure_DataError, "contract type_url mismatch");
 			return false;
 		}
-		if (decode_transfer_contract(&tx.raw_data.contract[0].parameter.value, to_str, sizeof(to_str), &amount, msg))
+		if (decode_transfer_contract(&tx.contract[0].parameter.value, to_str, sizeof(to_str), &amount, msg))
 		{
 			fsm_sendFailure(FailureType_Failure_DataError, msg);
 			return false;
 		}
 		break;
-	case protocol_Contract_ContractType_TriggerSmartContract:
-		if (strcmp(tx.raw_data.contract[0].parameter.type_url, "type.googleapis.com/protocol.TriggerSmartContract"))
+	case protocol_Transaction_Contract_ContractType_TriggerSmartContract:
+		if (strcmp(tx.contract[0].parameter.type_url, "type.googleapis.com/protocol.TriggerSmartContract"))
 		{
 			fsm_sendFailure(FailureType_Failure_DataError, "contract type_url mismatch");
 			return false;
 		}
-		if (decode_trc20_contract(&tx.raw_data.contract[0].parameter.value, to_str, sizeof(to_str), &value_bytes, &value_len, &token, msg))
+		if (decode_trc20_contract(&tx.contract[0].parameter.value, to_str, sizeof(to_str), value_bytes, &token, msg))
 		{
 			fsm_sendFailure(FailureType_Failure_DataError, msg);
 			return false;
 		}
 		break;
-	case protocol_Contract_ContractType_TransferAssetContract:
+	case protocol_Transaction_Contract_ContractType_TransferAssetContract:
 	default:
 		fsm_sendFailure(FailureType_Failure_DataError, "unsupported contract type");
 		return false;
 	}
 
 	// parse fee
-	uint64_t fee;
-	if (tx.raw_data.has_fee_limit) {
-		fee = tx.raw_data.fee_limit;
-	} else {
-		fee = 0;
-	}
+	uint64_t fee = tx.fee_limit;
 
 	// display tx info and ask user to confirm
 	layoutTronConfirmTx(to_str, amount, value_bytes, value_len, token);
@@ -222,10 +202,10 @@ bool tron_sign_raw_tx(const uint8_t *raw_tx, int raw_tx_size, const HDNode *node
 
 	// hash the tx
 	uint8_t hash[32];
-	struct SHA3_CTX ctx;
-	sha3_256_Init(&ctx);
-	sha3_Update(&ctx, raw_tx, raw_tx_size);
-	keccak_Final(&ctx, hash);
+	SHA256_CTX ctx;
+	sha256_Init(&ctx);
+	sha256_Update(&ctx, raw_data, raw_data_size);
+	sha256_Final(&ctx, hash);
 
 	// sign tx hash
 	uint8_t v;
@@ -247,15 +227,9 @@ void tron_format_amount(const uint64_t amount, char *buf, int buflen) {
 }
 
 void tron_format_token_amount(const bignum256 *amnt, ConstTronTokenPtr token, char *buf, int buflen) {
-	bignum256 bn1e9;
-	bn_read_uint32(1000000000, &bn1e9);
-	const char *suffix = NULL;
-	int decimals = 18;
 	if (token == NULL) {
 		strlcpy(buf, "Unknown token value", buflen);
 		return;
 	}
-	suffix = token->ticker;
-	decimals = token->decimals;
-	bn_format(amnt, NULL, suffix, decimals, 0, false, buf, buflen);
+	bn_format(amnt, NULL, token->ticker, token->decimals, 0, false, buf, buflen);
 }

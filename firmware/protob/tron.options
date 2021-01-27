@@ -1,17 +1,19 @@
 protocol.Any.type_url    max_size:100
 protocol.Any.value       max_size:1000
 
-protocol.raw.Contract.provider   max_size:100
+protocol.Transaction.Contract.provider   max_size:100
 
-protocol.raw.contract   max_count:1
+protocol.Transaction.raw.ref_block_bytes    max_size:2
+protocol.Transaction.raw.ref_block_hash     max_size:8
+protocol.Transaction.raw.contract   max_count:1
 
-protocol.TransferContract.owner_address max_size:20
-protocol.TransferContract.to_address    max_size:20
+protocol.TransferContract.owner_address max_size:21
+protocol.TransferContract.to_address    max_size:21
 
 protocol.TransferAssetContract.asset_name   max_size:20
-protocol.TransferAssetContract.owner_address    max_size:20
-protocol.TransferAssetContract.to_address   max_size:20
+protocol.TransferAssetContract.owner_address    max_size:21
+protocol.TransferAssetContract.to_address   max_size:21
 
-protocol.TriggerSmartContract.owner_address     max_size:20
-protocol.TriggerSmartContract.contract_address  max_size:20
+protocol.TriggerSmartContract.owner_address     max_size:21
+protocol.TriggerSmartContract.contract_address  max_size:21
 protocol.TriggerSmartContract.data              max_size:200
