@@ -143,7 +143,6 @@ bool tron_sign_raw_tx(const uint8_t *raw_data, int raw_data_size, const HDNode *
 	ConstTronTokenPtr token = NULL;
 	uint64_t amount = 0;
 	uint8_t value_bytes[32];
-	uint32_t value_len = sizeof(value_bytes);
 
 	if (tx.contract_count != 1) {
 		fsm_sendFailure(FailureType_Failure_DataError, "contract array size is not 1");
@@ -186,14 +185,14 @@ bool tron_sign_raw_tx(const uint8_t *raw_data, int raw_data_size, const HDNode *
 	uint64_t fee = tx.fee_limit;
 
 	// display tx info and ask user to confirm
-	layoutTronConfirmTx(to_str, amount, value_bytes, value_len, token);
+	layoutTronConfirmTx(to_str, amount, value_bytes, token);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		// TODO ethereum_signing_abort();
 		return false;
 	}
 
-	layoutTronFee(amount, value_bytes, value_len, token, fee);
+	layoutTronFee(amount, value_bytes, token, fee);
 	if (!protectButton(ButtonRequestType_ButtonRequest_SignTx, false)) {
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		// TODO ethereum_signing_abort();
