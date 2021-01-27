@@ -78,9 +78,9 @@ void layoutTronFee(const uint64_t value, const uint8_t *value_bytes, uint32_t va
 		NULL,
 		_("Really send"),
 		tx_value,
-		_("paying up to"),
+		_("and limit max fee to"),
 		gas_value,
-		_("for fee?"),
+		_("?"),
 		NULL
 	);
 }
