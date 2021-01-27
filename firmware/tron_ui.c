@@ -4,14 +4,8 @@
 #include "tron_ui.h"
 #include "tron.h"
 
-void layoutTronConfirmTx(const char *to_str, const uint64_t value, const uint8_t *value_bytes, uint32_t value_len, ConstTronTokenPtr token) {
-	bignum256 val;
-	uint8_t pad_val[32];
-	memset(pad_val, 0, sizeof(pad_val));
-	memcpy(pad_val + (32 - value_len), value_bytes, value_len);
-	bn_read_be(pad_val, &val);
-
-	char amount[32];
+void layoutTronConfirmTx(const char *to_str, const uint64_t value, const uint8_t *value_bytes, ConstTronTokenPtr token) {
+	char amount[60];
 	if (token == NULL) {
 		if (value == 0) {
 			strcpy(amount, _("message"));
@@ -19,6 +13,8 @@ void layoutTronConfirmTx(const char *to_str, const uint64_t value, const uint8_t
 			tron_format_amount(value, amount, sizeof(amount));
 		}
 	} else {
+		bignum256 val;
+		bn_read_be(value_bytes, &val);
 		tron_format_token_amount(&val, token, amount, sizeof(amount));
 	}
 
@@ -51,17 +47,11 @@ void layoutTronConfirmTx(const char *to_str, const uint64_t value, const uint8_t
 	);
 }
 
-void layoutTronFee(const uint64_t value, const uint8_t *value_bytes, uint32_t value_len, ConstTronTokenPtr token, const uint64_t fee) {
-	bignum256 val;
-	uint8_t pad_val[32];
-	memset(pad_val, 0, sizeof(pad_val));
-	memcpy(pad_val + (32 - value_len), value_bytes, value_len);
-	bn_read_be(pad_val, &val);
-
+void layoutTronFee(const uint64_t value, const uint8_t *value_bytes, ConstTronTokenPtr token, const uint64_t fee) {
 	char gas_value[32];
 	tron_format_amount(fee, gas_value, sizeof(gas_value));
 
-	char tx_value[32];
+	char tx_value[60];
 	if (token == NULL) {
 		if (value == 0) {
 			strcpy(tx_value, _("message"));
@@ -69,6 +59,8 @@ void layoutTronFee(const uint64_t value, const uint8_t *value_bytes, uint32_t va
 			tron_format_amount(value, tx_value, sizeof(tx_value));
 		}
 	} else {
+		bignum256 val;
+		bn_read_be(value_bytes, &val);
 		tron_format_token_amount(&val, token, tx_value, sizeof(tx_value));
 	}
 

@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include "tron_tokens.h"
 
-void layoutTronConfirmTx(const char *to_str, const uint64_t amount, const uint8_t *value_bytes, uint32_t value_len, ConstTronTokenPtr token);
-void layoutTronFee(const uint64_t amount, const uint8_t *value_bytes, uint32_t value_len, ConstTronTokenPtr token, const uint64_t fee);
+void layoutTronConfirmTx(const char *to_str, const uint64_t amount, const uint8_t *value_bytes, ConstTronTokenPtr token);
+void layoutTronFee(const uint64_t amount, const uint8_t *value_bytes, ConstTronTokenPtr token, const uint64_t fee);
 
 #endif // __TRON_UI_H__
