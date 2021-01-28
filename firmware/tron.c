@@ -214,6 +214,7 @@ bool tron_sign_raw_tx(const uint8_t *raw_data, int raw_data_size, const HDNode *
 	}
 
 	// fill response
+	resp->signature.bytes[64] = 27 + v;
 	resp->signature.size = 65;
 
 	return true;
