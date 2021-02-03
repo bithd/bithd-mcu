@@ -111,7 +111,7 @@ DEBUG_LINK ?= 0
 DEBUG_LOG  ?= 0
 
 CFLAGS += -Wno-sequence-point
-CFLAGS += -I../vendor/nanopb -Iprotob -DPB_FIELD_16BIT=1
+CFLAGS += -I../vendor/nanopb -Iprotob -DPB_FIELD_32BIT=1
 CFLAGS += -DQR_MAX_VERSION=0
 CFLAGS += -DDEBUG_LINK=$(DEBUG_LINK)
 CFLAGS += -DDEBUG_LOG=$(DEBUG_LOG)
