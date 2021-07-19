@@ -49,6 +49,7 @@ typedef struct _CoinInfo {
 	uint32_t coin_type;
 	const char *curve_name;
 	const curve_info *curve;
+	uint8_t decimal;
 } CoinInfo;
 
 #include "coin_info.h"

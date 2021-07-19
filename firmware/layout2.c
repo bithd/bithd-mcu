@@ -111,7 +111,7 @@ void layoutHome(void)
 void layoutConfirmOutput(const CoinInfo *coin, const TxOutputType *out)
 {
 	char str_out[32];
-	bn_format_uint64(out->amount, NULL, coin->coin_shortcut, BITCOIN_DIVISIBILITY, 0, false, str_out, sizeof(str_out));
+	bn_format_uint64(out->amount, NULL, coin->coin_shortcut, coin->decimal, 0, false, str_out, sizeof(str_out));
 	static char lines[2][28];
 	const char *addr = out->address;
 	int addrlen = strlen(addr);
@@ -173,8 +173,8 @@ void layoutConfirmOpReturn(const uint8_t *data, uint32_t size)
 void layoutConfirmTx(const CoinInfo *coin, uint64_t amount_out, uint64_t amount_fee)
 {
 	char str_out[32], str_fee[32];
-	bn_format_uint64(amount_out, NULL, coin->coin_shortcut, BITCOIN_DIVISIBILITY, 0, false, str_out, sizeof(str_out));
-	bn_format_uint64(amount_fee, NULL, coin->coin_shortcut, BITCOIN_DIVISIBILITY, 0, false, str_fee, sizeof(str_fee));
+	bn_format_uint64(amount_out, NULL, coin->coin_shortcut, coin->decimal, 0, false, str_out, sizeof(str_out));
+	bn_format_uint64(amount_fee, NULL, coin->coin_shortcut, coin->decimal, 0, false, str_fee, sizeof(str_fee));
 	layoutDialogSwipe(&bmp_icon_question,
 		_("Cancel"),
 		_("Confirm"),
@@ -191,7 +191,7 @@ void layoutConfirmTx(const CoinInfo *coin, uint64_t amount_out, uint64_t amount_
 void layoutFeeOverThreshold(const CoinInfo *coin, uint64_t fee)
 {
 	char str_fee[32];
-	bn_format_uint64(fee, NULL, coin->coin_shortcut, BITCOIN_DIVISIBILITY, 0, false, str_fee, sizeof(str_fee));
+	bn_format_uint64(fee, NULL, coin->coin_shortcut, coin->decimal, 0, false, str_fee, sizeof(str_fee));
 	layoutDialogSwipe(&bmp_icon_question,
 		_("Cancel"),
 		_("Confirm"),
