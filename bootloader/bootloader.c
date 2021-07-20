@@ -17,6 +17,8 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "bithd_device.h"
+
 #include <string.h>
 
 #include <libopencm3/stm32/rcc.h>
@@ -151,17 +153,33 @@ int main(void)
 #endif
 ///////////////////////////////////////////
 
+IF_RAZOR(
+	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO15);
+)
+IF_BITHD(
 	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, BitBTN_PIN_YES);
 	gpio_mode_setup(GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO5);
+)
     timer_init();
 
 
 /////////////////////////////////////////////////
+IF_RAZOR(
+    uint16_t state;
+)
+IF_BITHD(
     uint16_t state= gpio_port_read(BitBTN_PORT);
+)
 
     delay(100000);
+IF_RAZOR(
+    state = gpio_port_read(GPIOA);
+ 	if((state & GPIO15) == GPIO15)
+)
+IF_BITHD(
     state = gpio_port_read(GPIOB);
  	if ((state & GPIO5) == GPIO5)
+)
     {
 		usart_setup();    //uart init 115200
 		if (!signatures_ok(NULL)) 
@@ -179,12 +197,22 @@ int main(void)
 	}
 	else
 	{
+IF_RAZOR(
+		state = gpio_port_read(GPIOA);
+)
+IF_BITHD(
 		state = gpio_port_read(BitBTN_PORT);
+)
 		oledClear();
 		oledDrawBitmap(40, 8,&bmp_logo64);
 		oledRefresh();
 		
+IF_RAZOR(
+		if ((state & GPIO2) == GPIO2)
+)
+IF_BITHD(
 		if ((state & BitBTN_PIN_YES) == BitBTN_PIN_YES)
+)
 		{
 #if PROTECTED
 			if (firmware_present()) 

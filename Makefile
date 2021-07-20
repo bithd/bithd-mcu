@@ -1,3 +1,13 @@
+ifndef DEVICE_MODEL
+$(error DEVICE_MODEL is undefined)
+endif
+ifneq  ($(DEVICE_MODEL), BITHD_BITHD)
+ifneq  ($(DEVICE_MODEL), BITHD_RAZOR)
+$(error invalid DEVICE_MODEL=$(DEVICE_MODEL) defined)
+endif
+endif
+CFLAGS += -D${DEVICE_MODEL}=1
+
 OBJS += startup.o
 OBJS += buttons.o
 OBJS += layout.o

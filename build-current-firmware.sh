@@ -6,8 +6,10 @@ TAG=${1:-current}
 BINFILE=build/bithd-$TAG-unsigned.bin
 ELFFILE=build/bithd-$TAG.elf
 
+echo "Build firmware for device $DEVICE_MODEL"
+
 docker build -t $IMAGE .
-docker run -t -v "$(pwd)/build:/build:z" -v "$(pwd):/bithd-mcu" $IMAGE /bin/sh -c "\
+docker run -e DEVICE_MODEL=${DEVICE_MODEL} -t -v "$(pwd)/build:/build:z" -v "$(pwd):/bithd-mcu" $IMAGE /bin/sh -c "\
 	cd /bithd-mcu && \
 	make clean && \
 	make -C vendor/libopencm3 && \

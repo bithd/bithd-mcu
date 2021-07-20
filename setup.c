@@ -23,8 +23,12 @@
 #include <libopencm3/stm32/spi.h>
 #include <libopencm3/stm32/f2/rng.h>
 
+#include "bithd_device.h"
 #include "rng.h"
 #include "layout.h"
+#ifdef BITHD_RAZOR
+#include "buttons.h"
+#endif
 
 uint32_t __stack_chk_guard;
 
@@ -66,8 +70,9 @@ void setup(void)
 	rcc_periph_clock_enable(RCC_SPI1);
 
 	// enable OTG FS clock
+IF_BITHD(
 	rcc_periph_clock_enable(RCC_OTGFS);
-
+)
 	// enable RNG
 	rcc_periph_clock_enable(RCC_RNG);
 	RNG_CR |= RNG_CR_RNGEN;
@@ -79,7 +84,18 @@ void setup(void)
 	RCC_CR |= RCC_CR_CSSON;
 
 	// set GPIO for buttons
+IF_RAZOR(
+	gpio_mode_setup(GPIOC, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, BitBTN_PIN_YES);
+	gpio_mode_setup(GPIOC, GPIO_MODE_INPUT, GPIO_PUPD_PULLDOWN,BitBTN_PIN_NO);
+
+	//set functions IO
+	gpio_mode_setup(FUNC1_PORT,GPIO_MODE_INPUT,GPIO_PUPD_PULLUP,FUNC1_PIN);
+	gpio_mode_setup(FUNC2_PORT,GPIO_MODE_INPUT,GPIO_PUPD_PULLUP,FUNC2_PIN);
+	gpio_mode_setup(FUNC3_PORT,GPIO_MODE_INPUT,GPIO_PUPD_PULLUP,FUNC3_PIN);
+)
+IF_BITHD(
 	gpio_mode_setup(GPIOC, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO12 | GPIO10);
+)
 
 	// set GPIO for OLED display
 	gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
@@ -98,10 +114,10 @@ void setup(void)
 	spi_enable(SPI1);
 
 	// enable OTG_FS
+IF_BITHD(
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
 	gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
-
-
+)
 
 }
 

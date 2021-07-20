@@ -1,3 +1,4 @@
+CFLAGS += -D${DEVICE_MODEL}=1
 APPVER = 1.0.0
 
 ifeq ($(FASTFLASH),1)

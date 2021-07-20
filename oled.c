@@ -140,8 +140,15 @@ void oledInit()
 		0x14,
 		OLED_MEMORYMODE,
 		0x00,
+#if defined(BITHD_RAZOR)
+		OLED_SEGREMAP,
+		OLED_COMSCANINC,
+#elif defined(BITHD_BITHD)
 		OLED_SEGREMAP | 0x01,
 		OLED_COMSCANDEC,
+#else
+#error "No valid DEVICE_MODEL defined"
+#endif
 		OLED_SETCOMPINS,
 		0x12, // 128x64
 		OLED_SETCONTRAST,

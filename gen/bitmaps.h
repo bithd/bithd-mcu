@@ -1,6 +1,8 @@
 #ifndef __BITMAPS_H__
 #define __BITMAPS_H__
 
+#include "bithd_device.h"
+
 #include <stdint.h>
 
 typedef struct {
@@ -147,6 +149,9 @@ extern const BITMAP bmp_logo48;
 extern const BITMAP bmp_logo48_empty;
 extern const BITMAP bmp_logo64;
 extern const BITMAP bmp_logo64_empty;
+IF_RAZOR(
+extern const BITMAP bmp_logomain;
+)
 extern const BITMAP bmp_u2f_bitbucket;
 extern const BITMAP bmp_u2f_bitfinex;
 extern const BITMAP bmp_u2f_dropbox;

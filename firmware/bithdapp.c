@@ -1,3 +1,4 @@
+#include "bithd_device.h"
 #include "trezor.h"
 #include "oled.h"
 #include "bitmaps.h"
@@ -392,10 +393,16 @@ void displaytimer(void)
 {
     unsigned char xy=0;
     unsigned char i;
+IF_BITHD(
     unsigned short year;
-
+)
     Keylogodispone_flag=0;//clear flag
+IF_RAZOR(
+    if(1)//(Timerdisplaybuf.Year!=0)
+)
+IF_BITHD(
     if(Timerdisplaybuf.Year!=0)
+)
     {
 	    oledClear();
 
@@ -423,6 +430,11 @@ void displaytimer(void)
 	        oledDrawBitmap(xy, 0,&bitpieblueconect);
 	    }
 
+IF_RAZOR(
+         //TEXT
+        oledDrawBitmap(0, 16,&bmp_logomain);
+)
+IF_BITHD(
         xy=24;
 	    oledDrawBitmap(xy, 16,BitpieDigits1632[Timerdisplaybuf.hours/10]);
 	    xy=xy+16;
@@ -464,6 +476,7 @@ void displaytimer(void)
         oledDrawBitmap(xy,48,BitpieDigits816[Timerdisplaybuf.Day/10]);
         xy=xy+8;
         oledDrawBitmap(xy,48,BitpieDigits816[Timerdisplaybuf.Day%10]);
+)
 	
         oledRefresh();
     }

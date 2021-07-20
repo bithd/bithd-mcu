@@ -20,6 +20,8 @@
 #ifndef __BUTTONS_H__
 #define __BUTTONS_H__
 
+#include "bithd_device.h"
+
 #include <libopencm3/stm32/gpio.h>
 #include <stdbool.h>
 
@@ -39,14 +41,42 @@ void buttonUpdate(void);
 #endif
 
 #ifndef BTN_PIN_YES
+#if defined(BITHD_RAZOR)
+#define BTN_PIN_YES	GPIO0
+#elif defined(BITHD_BITHD)
 #define BTN_PIN_YES	GPIO10
+#else
+#error "No valid DEVICE_MODEL defined"
+#endif
 #endif
 
 #ifndef BTN_PIN_NO
+#if defined(BITHD_RAZOR)
+#define BTN_PIN_NO	GPIO14
+#elif defined(BITHD_BITHD)
 #define BTN_PIN_NO	GPIO12
+#else
+#error "No valid DEVICE_MODEL defined"
+#endif
 #endif
 
+#if defined(BITHD_RAZOR)
+#define BitBTN_PORT GPIOC
+#define BitBTN_PIN_YES GPIO0
+#define BitBTN_PIN_NO	GPIO14
+
+#define FUNC1_PORT GPIOC
+#define FUNC2_PORT GPIOB
+#define FUNC3_PORT GPIOA
+
+#define FUNC1_PIN	GPIO9
+#define FUNC2_PIN	GPIO15
+#define FUNC3_PIN	GPIO15
+#elif defined(BITHD_BITHD)
 #define BitBTN_PORT GPIOA
 #define BitBTN_PIN_YES GPIO2
+#else
+#error "No valid DEVICE_MODEL defined"
+#endif
 
 #endif
