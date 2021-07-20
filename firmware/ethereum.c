@@ -281,6 +281,8 @@ static void ethereumFormatAmount(const bignum256 *amnt,TokenType *token, char *b
 			case 42: suffix = " tETH"; break;  // Ethereum Testnet: Kovan
 			case  2: suffix = " EXP";  break;  // Expanse
 			case  8: suffix = " UBQ";  break;  // UBIQ
+			case 56: suffix = " BNB";  break;  // BNB
+			case 128: suffix = " HT";  break;  // HT
 			default: suffix = " UNKN"; break;  // unknown chain
 		}
 	}
