@@ -26,6 +26,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (0 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Testnet",
@@ -47,6 +48,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Bcash",
@@ -68,6 +70,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (145 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Bcash Testnet",
@@ -89,6 +92,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "BcashSv",
@@ -110,7 +114,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (236 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
-
+	.decimal = 8,
 },
 {
 	.coin_name = "Bgold",
@@ -132,6 +136,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (156 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Bprivate",
@@ -153,6 +158,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (183 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Dash",
@@ -174,6 +180,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (5 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Dash Testnet",
@@ -195,6 +202,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Decred",
@@ -216,6 +224,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (42 | 0x80000000),
 	.curve_name = SECP256K1_DECRED_NAME,
 	.curve = &secp256k1_decred_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Decred Testnet",
@@ -237,6 +246,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_DECRED_NAME,
 	.curve = &secp256k1_decred_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "DigiByte",
@@ -258,6 +268,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (20 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Dogecoin",
@@ -279,6 +290,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (3 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Fujicoin",
@@ -300,6 +312,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (75 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Groestlcoin",
@@ -321,6 +334,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (17 | 0x80000000),
 	.curve_name = SECP256K1_GROESTL_NAME,
 	.curve = &secp256k1_groestl_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Groestlcoin Testnet",
@@ -342,6 +356,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_GROESTL_NAME,
 	.curve = &secp256k1_groestl_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Litecoin",
@@ -363,6 +378,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (2 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Litecoin Testnet",
@@ -384,6 +400,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Monacoin",
@@ -405,6 +422,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (22 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Namecoin",
@@ -426,6 +444,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (7 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Vertcoin",
@@ -447,6 +466,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (28 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Viacoin",
@@ -468,6 +488,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (14 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Zcash",
@@ -489,6 +510,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (133 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Ycash",
@@ -510,6 +532,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (347 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Zcash Testnet",
@@ -531,6 +554,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Zcoin",
@@ -552,6 +576,7 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (136 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
 },
 {
 	.coin_name = "Zcoin Testnet",
@@ -573,5 +598,28 @@ const CoinInfo coins[COINS_COUNT] = {
 	.coin_type = (1 | 0x80000000),
 	.curve_name = SECP256K1_NAME,
 	.curve = &secp256k1_info,
+	.decimal = 8,
+},
+{
+	.coin_name = "eCash",
+	.coin_shortcut = " XEC",
+	.maxfee_kb = 500000,
+	.signed_message_header = "\x18" "Bitcoin Signed Message:\n",
+	.has_address_type = true,
+	.has_address_type_p2sh = true,
+	.has_segwit = false,
+	.has_fork_id = true,
+	.force_bip143 = true,
+	.decred = false,
+	.address_type = 0,
+	.address_type_p2sh = 5,
+	.xpub_magic = 0x0488b21e,
+	.fork_id = 0,
+	.bech32_prefix = NULL,
+	.cashaddr_prefix = "ecash",
+	.coin_type = (145 | 0x80000000),
+	.curve_name = SECP256K1_NAME,
+	.curve = &secp256k1_info,
+	.decimal = 2,
 },
 };
