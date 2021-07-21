@@ -20,9 +20,9 @@
 #ifndef __TREZOR_H__
 #define __TREZOR_H__
 
-#define VERSION_MAJOR 2
-#define VERSION_MINOR 7
-#define VERSION_PATCH 6
+#define VERSION_MAJOR 4
+#define VERSION_MINOR 1
+#define VERSION_PATCH 7
 
 #define STR(X) #X
 #define VERSTR(X) STR(X)
